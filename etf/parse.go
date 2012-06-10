@@ -73,29 +73,6 @@ func parseAtom(b []byte) (ret Atom, size uint, err error) {
   return
 }
 
-// parseBool
-func parseBool(b []byte) (ret bool, size uint, err error) {
-  var v Atom
-
-  v, size, err = parseAtom(b)
-
-  if err == nil {
-    switch v {
-    case Atom("true"):
-      ret = true
-      return
-
-    case Atom("false"):
-      ret = false
-      return
-    }
-
-    err = SyntaxError{"not a boolean"}
-  }
-
-  return
-}
-
 // parseBigInt
 func parseBigInt(b []byte) (ret *big.Int, size uint, err error) {
   switch erlType(b[0]) {
@@ -139,37 +116,25 @@ func parseBigInt(b []byte) (ret *big.Int, size uint, err error) {
   return
 }
 
-// parseInt64
-func parseInt64(b []byte) (ret int64, size uint, err error) {
-  switch erlType(b[0]) {
-  case erlSmallInteger:
-    // $aI
-    if len(b) >= 2 {
-      return int64(b[1]), 2, nil
+// parseBool
+func parseBool(b []byte) (ret bool, size uint, err error) {
+  var v Atom
+
+  v, size, err = parseAtom(b)
+
+  if err == nil {
+    switch v {
+    case Atom("true"):
+      ret = true
+      return
+
+    case Atom("false"):
+      ret = false
+      return
     }
 
-  case erlInteger:
-    // $bIIII
-    if len(b) >= 5 {
-      return int64(int(be.Uint32(b[1:5]))), 5, nil
-    }
-
-  case erlSmallBig, erlLargeBig:
-    var v *big.Int
-    v, size, err = parseBigInt(b)
-
-    if err == nil {
-      ret = v.Int64()
-
-      if v.Cmp(big.NewInt(ret)) != 0 {
-        err = StructuralError{"integer too large"}
-      }
-    }
-
-    return
+    err = SyntaxError{"not a boolean"}
   }
-
-  err = SyntaxError{"not an integer"}
 
   return
 }
@@ -203,6 +168,41 @@ func parseFloat64(b []byte) (ret float64, size uint, err error) {
   default:
     err = SyntaxError{"not a float"}
   }
+
+  return
+}
+
+// parseInt64
+func parseInt64(b []byte) (ret int64, size uint, err error) {
+  switch erlType(b[0]) {
+  case erlSmallInteger:
+    // $aI
+    if len(b) >= 2 {
+      return int64(b[1]), 2, nil
+    }
+
+  case erlInteger:
+    // $bIIII
+    if len(b) >= 5 {
+      return int64(int(be.Uint32(b[1:5]))), 5, nil
+    }
+
+  case erlSmallBig, erlLargeBig:
+    var v *big.Int
+    v, size, err = parseBigInt(b)
+
+    if err == nil {
+      ret = v.Int64()
+
+      if v.Cmp(big.NewInt(ret)) != 0 {
+        err = StructuralError{"integer too large"}
+      }
+    }
+
+    return
+  }
+
+  err = SyntaxError{"not an integer"}
 
   return
 }
