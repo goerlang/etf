@@ -177,6 +177,83 @@ func Test_parseFloat64(t *testing.T) {
   }
 }
 
+func Test_parseString(t *testing.T) {
+  // "" (nil)
+  v, size, err := parseString([]byte{106})
+  assert.Equal(t, nil, err)
+  assert.Equal(t, "", v)
+  assert.Equal(t, uint(1), size)
+
+  // "" (empty list)
+  v, size, err = parseString([]byte{108,0,0,0,0,106})
+  assert.Equal(t, nil, err)
+  assert.Equal(t, "", v)
+  assert.Equal(t, uint(6), size)
+
+  // "" (empty binary)
+  v, size, err = parseString([]byte{109,0,0,0,0})
+  assert.Equal(t, nil, err)
+  assert.Equal(t, "", v)
+  assert.Equal(t, uint(5), size)
+
+  // "abc"
+  v, size, err = parseString([]byte{107,0,3,97,98,99})
+  assert.Equal(t, nil, err)
+  assert.Equal(t, "abc", v)
+  assert.Equal(t, uint(6), size)
+
+  // <<"abc">>
+  v, size, err = parseString([]byte{109,0,0,0,3,97,98,99})
+  assert.Equal(t, nil, err)
+  assert.Equal(t, "abc", v)
+  assert.Equal(t, uint(8), size)
+
+  // "фыва", where the last one is of erlSmallBig type
+  v, size, err = parseString([]byte{
+    108,0,0,0,4,98,0,0,4,68,98,0,0,4,
+    75,98,0,0,4,50,110,2,0,48,4,106,
+  })
+  assert.Equal(t, nil, err)
+  assert.Equal(t, "фыва", v)
+  assert.Equal(t, uint(26), size)
+
+  // "фыва", where the last one is of erlLargeBig type
+  v, size, err = parseString([]byte{
+    108,0,0,0,4,98,0,0,4,68,98,0,0,4,
+    75,98,0,0,4,50,111,0,0,0,2,0,48,4,106,
+  })
+  assert.Equal(t, nil, err)
+  assert.Equal(t, "фыва", v)
+  assert.Equal(t, uint(29), size)
+
+  // error (wrong length) in string
+  v, size, err = parseString([]byte{107,0,3,97,98})
+  assert.NotEqual(t, nil, err)
+  switch err.(type) {
+  case StructuralError:
+  default:
+    t.Fatal("error is not StructuralError")
+  }
+
+  // error (wrong length) in binary string
+  v, size, err = parseString([]byte{109,0,0,0,3,97,98})
+  assert.NotEqual(t, nil, err)
+  switch err.(type) {
+  case StructuralError:
+  default:
+    t.Fatal("error is not StructuralError")
+  }
+
+  // error (improper list) [$a,$b,$c|0]
+  v, size, err = parseString([]byte{108,0,0,0,3,97,98,99,0})
+  assert.NotEqual(t, nil, err)
+  switch err.(type) {
+  case StructuralError:
+  default:
+    t.Fatal("error is not StructuralError")
+  }
+}
+
 // Local Variables:
 // indent-tabs-mode: nil
 // tab-width: 2

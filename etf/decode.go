@@ -154,9 +154,7 @@ func parseInt64(b []byte) (ret int64, size uint, err error) {
       return int64(int(be.Uint32(b[1:5]))), 5, nil
     }
 
-  case erlSmallBig:
-    fallthrough
-  case erlLargeBig:
+  case erlSmallBig, erlLargeBig:
     var v *big.Int
     v, size, err = parseBigInt(b)
 
@@ -193,8 +191,6 @@ func parseFloat64(b []byte) (ret float64, size uint, err error) {
       err = StructuralError{fmt.Sprintf("invalid float length (%d)", len(b))}
     }
 
-    return
-
   case erlNewFloat:
     // $FFFFFFFFF
     if len(b) >= 9 {
@@ -204,10 +200,103 @@ func parseFloat64(b []byte) (ret float64, size uint, err error) {
       err = StructuralError{fmt.Sprintf("invalid float length (%d)", len(b))}
     }
 
-    return
+  default:
+    err = SyntaxError{"not a float"}
   }
 
-  err = SyntaxError{"not a float"}
+  return
+}
+
+// parseString
+func parseString(b []byte) (ret string, size uint, err error) {
+  switch erlType(b[0]) {
+  case erlString:
+    // $kLL…
+    if len(b) > 3 {
+      size = 3 + uint(be.Uint16(b[1:3]))
+
+      if uint(len(b)) >= size {
+        ret = string(b[3:size])
+      } else {
+        err = StructuralError{
+          fmt.Sprintf("invalid string size (%d), len=%d", size, len(b)),
+        }
+      }
+    } else {
+      err = StructuralError{
+        fmt.Sprintf("invalid string length (%d)", len(b)),
+      }
+    }
+
+  case erlBinary:
+    // $mLLLL…
+    if len(b) >= 5 {
+      size = 5 + uint(be.Uint32(b[1:5]))
+
+      if uint(len(b)) >= size {
+        ret = string(b[5:size])
+      } else {
+        err = StructuralError{
+          fmt.Sprintf("invalid binary size (%d), len=%d", size, len(b)),
+        }
+      }
+    } else {
+      err = StructuralError{
+        fmt.Sprintf("invalid binary length (%d)", len(b)),
+      }
+    }
+
+  case erlList:
+    // $lLLLL…$j
+    if len(b) >= 5 {
+      strLen := uint(be.Uint32(b[1:5]))
+      size = 5
+      b = b[size:]
+
+      err = StructuralError{"not a string"}
+
+      for i := uint(0); i < strLen; i++ {
+        if len(b) <= 0 {
+          err = StructuralError{"string ends abruptly"}
+          return
+        }
+
+        switch erlType(b[0]) {
+        case erlSmallInteger, erlInteger, erlSmallBig, erlLargeBig:
+          var char int64
+          var charSize uint
+          var charErr error
+          char, charSize, charErr = parseInt64(b)
+
+          if charErr == nil {
+            ret += string(char)
+            size += charSize
+            b = b[charSize:]
+          } else {
+            return
+          }
+
+        default:
+          return
+        }
+      }
+
+      if len(b) < 1 || erlType(b[0]) != erlNil {
+        err = StructuralError{"not a string (got improper list)"}
+        return
+      }
+
+      size++
+      err = nil
+    }
+
+  case erlNil:
+    // $j
+    size++
+
+  default:
+    err = SyntaxError{"not a string"}
+  }
 
   return
 }
