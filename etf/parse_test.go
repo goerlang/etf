@@ -24,10 +24,39 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 import (
+  "bytes"
   "github.com/bmizerany/assert"
   "math/big"
+  "math/rand"
   "testing"
+  "time"
 )
+
+func Benchmark_parseAtom_64(b *testing.B) {
+  b.StopTimer()
+
+  rand.Seed(time.Now().UnixNano())
+  max := 64
+  length := 64
+  atoms := make([][]byte, max)
+
+  for i := 0; i < max; i++ {
+    w := new(bytes.Buffer)
+    s := bytes.Repeat([]byte{'a'}, length)
+    writeAtom(w, Atom(string(bytes.Map(func(rune) rune { return rune(byte(rand.Int())) }, s))))
+    atoms[i] = w.Bytes()
+  }
+
+  b.StartTimer()
+
+  for i := 0; i < b.N; i++ {
+    _, _, err := parseAtom(atoms[i % max])
+
+    if err != nil {
+      b.Fatal("failed to parse atom")
+    }
+  }
+}
 
 func Test_parseAtom(t *testing.T) {
   // 'abc'
@@ -272,6 +301,32 @@ func Test_parseFloat64(t *testing.T) {
   case StructuralError:
   default:
     t.Fatalf("error is not StructuralError, but %T", err)
+  }
+}
+
+func Benchmark_parseString_64(b *testing.B) {
+  b.StopTimer()
+
+  rand.Seed(time.Now().UnixNano())
+  max := 64
+  length := 64
+  strings := make([][]byte, max)
+
+  for i := 0; i < max; i++ {
+    w := new(bytes.Buffer)
+    s := bytes.Repeat([]byte{'a'}, length)
+    writeString(w, string(bytes.Map(func(rune) rune { return rune(byte(rand.Int())) }, s)))
+    strings[i] = w.Bytes()
+  }
+
+  b.StartTimer()
+
+  for i := 0; i < b.N; i++ {
+    _, _, err := parseString(strings[i % max])
+
+    if err != nil {
+      b.Fatal("failed to parse string")
+    }
   }
 }
 
