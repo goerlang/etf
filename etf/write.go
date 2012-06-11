@@ -23,12 +23,28 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-type EncodeError struct {
-  Msg string
+import (
+  bin "encoding/binary"
+  "fmt"
+  "io"
+)
+
+func writeAtom(w io.Writer, a Atom) (err error) {
+  return
 }
 
-func (err EncodeError) Error() string {
-  return errPrefix + "encode error: " + err.Msg
+func writeString(w io.Writer, s string) (err error) {
+  size := len(s)
+
+  if int(uint16(size)) != size {
+    err = EncodeError{fmt.Sprintf("string is too big (%d bytes)", size)}
+  } else {
+    bin.Write(w, be, byte(erlString))
+    bin.Write(w, be, uint16(size))
+    bin.Write(w, be, []byte(s))
+  }
+
+  return
 }
 
 // Local Variables:

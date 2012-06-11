@@ -23,12 +23,55 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-type EncodeError struct {
-  Msg string
-}
+import (
+  "bytes"
+  "github.com/bmizerany/assert"
+  "testing"
+)
 
-func (err EncodeError) Error() string {
-  return errPrefix + "encode error: " + err.Msg
+func Test_writeString(t *testing.T) {
+  var size uint
+  var v string
+  var resultString string
+  var resultSize uint
+  var err error
+
+  w := new(bytes.Buffer)
+
+  // 65535 'a'
+  w.Reset()
+  v = string(bytes.Repeat([]byte{'a'}, 65535))
+  size = 3 + uint(len(v))
+  err = writeString(w, v)
+  assert.Equal(t, nil, err)
+  assert.Equal(t, size, uint(w.Len()))
+  resultString, resultSize, err = parseString(w.Bytes())
+  assert.Equal(t, nil, err)
+  assert.Equal(t, v, resultString)
+  assert.Equal(t, size, resultSize)
+
+  // empty string
+  w.Reset()
+  v = ""
+  size = 3
+  err = writeString(w, v)
+  assert.Equal(t, nil, err)
+  assert.Equal(t, size, uint(w.Len()))
+  resultString, resultSize, err = parseString(w.Bytes())
+  assert.Equal(t, nil, err)
+  assert.Equal(t, v, resultString)
+  assert.Equal(t, size, resultSize)
+
+  // error (65536 'a')
+  w.Reset()
+  v = string(bytes.Repeat([]byte{'a'}, 65536))
+  err = writeString(w, v)
+  assert.NotEqual(t, nil, err)
+  switch err.(type) {
+  case EncodeError:
+  default:
+    t.Fatalf("error is not EncodeError, but %T", err)
+  }
 }
 
 // Local Variables:
