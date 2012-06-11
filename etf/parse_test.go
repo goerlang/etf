@@ -30,17 +30,29 @@ import (
 )
 
 func Test_parseAtom(t *testing.T) {
-  // "abc"
+  // 'abc'
   v, size, err := parseAtom([]byte{100,0,3,97,98,99})
   assert.Equal(t, nil, err)
   assert.Equal(t, Atom("abc"), v)
   assert.Equal(t, uint(6), size)
 
-  // "abc" as SmallAtom
+  // ''
+  v, size, err = parseAtom([]byte{100,0,0})
+  assert.Equal(t, nil, err)
+  assert.Equal(t, Atom(""), v)
+  assert.Equal(t, uint(3), size)
+
+  // 'abc' as SmallAtom
   v, size, err = parseAtom([]byte{115,3,97,98,99})
   assert.Equal(t, nil, err)
   assert.Equal(t, Atom("abc"), v)
   assert.Equal(t, uint(5), size)
+
+  // '' as SmallAtom
+  v, size, err = parseAtom([]byte{115,0})
+  assert.Equal(t, nil, err)
+  assert.Equal(t, Atom(""), v)
+  assert.Equal(t, uint(2), size)
 
   // error (ends abruptly)
   v, size, err = parseAtom([]byte{100,0,4,97,98,99})
@@ -269,6 +281,12 @@ func Test_parseString(t *testing.T) {
   assert.Equal(t, nil, err)
   assert.Equal(t, "", v)
   assert.Equal(t, uint(1), size)
+
+  // "" (empty string)
+  v, size, err = parseString([]byte{107,0,0})
+  assert.Equal(t, nil, err)
+  assert.Equal(t, "", v)
+  assert.Equal(t, uint(3), size)
 
   // "" (empty list)
   v, size, err = parseString([]byte{108,0,0,0,0,106})

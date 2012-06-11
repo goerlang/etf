@@ -57,7 +57,7 @@ func parseAtom(b []byte) (ret Atom, size uint, err error) {
   switch erlType(b[0]) {
   case erlAtom:
     // $dLL…
-    if len(b) > 3 {
+    if len(b) >= 3 {
       size = 3 + uint(be.Uint16(b[1:3]))
 
       if uint(len(b)) >= size {
@@ -73,7 +73,7 @@ func parseAtom(b []byte) (ret Atom, size uint, err error) {
 
   case erlSmallAtom:
     // $sL…
-    if len(b) > 2 {
+    if len(b) >= 2 {
       size = 2 + uint(b[1])
 
       if uint(len(b)) >= size {
@@ -245,7 +245,7 @@ func parseString(b []byte) (ret string, size uint, err error) {
   switch erlType(b[0]) {
   case erlString:
     // $kLL…
-    if len(b) > 3 {
+    if len(b) >= 3 {
       size = 3 + uint(be.Uint16(b[1:3]))
 
       if uint(len(b)) >= size {
@@ -281,7 +281,7 @@ func parseString(b []byte) (ret string, size uint, err error) {
 
   case erlList:
     // $lLLLL…$j
-    if len(b) >= 5 {
+    if len(b) > 5 {
       strLen := uint(be.Uint32(b[1:5]))
       size = 5
       b = b[size:]
