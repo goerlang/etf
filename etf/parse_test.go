@@ -42,13 +42,22 @@ func Test_parseAtom(t *testing.T) {
   assert.Equal(t, Atom("abc"), v)
   assert.Equal(t, uint(5), size)
 
-  // error
+  // error (ends abruptly)
   v, size, err = parseAtom([]byte{100,0,4,97,98,99})
   assert.NotEqual(t, nil, err)
   switch err.(type) {
   case StructuralError:
   default:
-    t.Fatal("error is not StructuralError")
+    t.Fatalf("error is not StructuralError, but %T", err)
+  }
+
+  // error (bad length)
+  v, size, err = parseAtom([]byte{100})
+  assert.NotEqual(t, nil, err)
+  switch err.(type) {
+  case StructuralError:
+  default:
+    t.Fatalf("error is not StructuralError, but %T", err)
   }
 }
 
@@ -71,7 +80,7 @@ func Test_parseBool(t *testing.T) {
   switch err.(type) {
   case SyntaxError:
   default:
-    t.Fatal("error is not SyntaxError")
+    t.Fatalf("error is not SyntaxError, but %T", err)
   }
 }
 
@@ -106,13 +115,49 @@ func Test_parseInt64(t *testing.T) {
   assert.Equal(t, int64(-9223372036854775808), v)
   assert.Equal(t, uint(11), size)
 
+  // error (bad length)
+  v, size, err = parseInt64([]byte{97})
+  assert.NotEqual(t, nil, err)
+  switch err.(type) {
+  case StructuralError:
+  default:
+    t.Fatalf("error is not StructuralError, but %T", err)
+  }
+
+  // error (bad length)
+  v, size, err = parseInt64([]byte{98})
+  assert.NotEqual(t, nil, err)
+  switch err.(type) {
+  case StructuralError:
+  default:
+    t.Fatalf("error is not StructuralError, but %T", err)
+  }
+
+  // error (bad length)
+  v, size, err = parseInt64([]byte{110})
+  assert.NotEqual(t, nil, err)
+  switch err.(type) {
+  case StructuralError:
+  default:
+    t.Fatalf("error is not StructuralError, but %T", err)
+  }
+
+  // error (bad length)
+  v, size, err = parseInt64([]byte{111})
+  assert.NotEqual(t, nil, err)
+  switch err.(type) {
+  case StructuralError:
+  default:
+    t.Fatalf("error is not StructuralError, but %T", err)
+  }
+
   // error (0x8000000000000000)
   v, size, err = parseInt64([]byte{110,8,0,0,0,0,0,0,0,0,128})
   assert.NotEqual(t, nil, err)
   switch err.(type) {
   case StructuralError:
   default:
-    t.Fatal("error is not StructuralError")
+    t.Fatalf("error is not StructuralError, but %T", err)
   }
 
   // error (-0x8000000000000001)
@@ -121,7 +166,7 @@ func Test_parseInt64(t *testing.T) {
   switch err.(type) {
   case StructuralError:
   default:
-    t.Fatal("error is not StructuralError")
+    t.Fatalf("error is not StructuralError, but %T", err)
   }
 }
 
@@ -184,7 +229,7 @@ func Test_parseFloat64(t *testing.T) {
   switch err.(type) {
   case StructuralError:
   default:
-    t.Fatal("error is not StructuralError")
+    t.Fatalf("error is not StructuralError, but %T", err)
   }
 
   // error (fail on Sscanf)
@@ -196,7 +241,25 @@ func Test_parseFloat64(t *testing.T) {
   switch err.(type) {
   case StructuralError:
   default:
-    t.Fatal("error is not StructuralError")
+    t.Fatalf("error is not StructuralError, but %T", err)
+  }
+
+  // error (bad length)
+  v, size, err = parseFloat64([]byte{99})
+  assert.NotEqual(t, nil, err)
+  switch err.(type) {
+  case StructuralError:
+  default:
+    t.Fatalf("error is not StructuralError, but %T", err)
+  }
+
+  // error (bad length)
+  v, size, err = parseFloat64([]byte{70})
+  assert.NotEqual(t, nil, err)
+  switch err.(type) {
+  case StructuralError:
+  default:
+    t.Fatalf("error is not StructuralError, but %T", err)
   }
 }
 
@@ -255,7 +318,7 @@ func Test_parseString(t *testing.T) {
   switch err.(type) {
   case StructuralError:
   default:
-    t.Fatal("error is not StructuralError")
+    t.Fatalf("error is not StructuralError, but %T", err)
   }
 
   // error (wrong length) in binary string
@@ -264,7 +327,7 @@ func Test_parseString(t *testing.T) {
   switch err.(type) {
   case StructuralError:
   default:
-    t.Fatal("error is not StructuralError")
+    t.Fatalf("error is not StructuralError, but %T", err)
   }
 
   // error (improper list) [$a,$b,$c|0]
@@ -273,7 +336,34 @@ func Test_parseString(t *testing.T) {
   switch err.(type) {
   case StructuralError:
   default:
-    t.Fatal("error is not StructuralError")
+    t.Fatalf("error is not StructuralError, but %T", err)
+  }
+
+  // error (bad length)
+  v, size, err = parseString([]byte{107})
+  assert.NotEqual(t, nil, err)
+  switch err.(type) {
+  case StructuralError:
+  default:
+    t.Fatalf("error is not StructuralError, but %T", err)
+  }
+
+  // error (bad length)
+  v, size, err = parseString([]byte{108})
+  assert.NotEqual(t, nil, err)
+  switch err.(type) {
+  case StructuralError:
+  default:
+    t.Fatalf("error is not StructuralError, but %T", err)
+  }
+
+  // error (bad length)
+  v, size, err = parseString([]byte{109})
+  assert.NotEqual(t, nil, err)
+  switch err.(type) {
+  case StructuralError:
+  default:
+    t.Fatalf("error is not StructuralError, but %T", err)
   }
 }
 

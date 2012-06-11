@@ -65,6 +65,10 @@ func parseAtom(b []byte) (ret Atom, size uint, err error) {
       } else {
         err = StructuralError{"wrong atom size"}
       }
+    } else {
+      err = StructuralError{
+        fmt.Sprintf("invalid atom length (%d)", len(b)),
+      }
     }
 
   case erlSmallAtom:
@@ -76,6 +80,10 @@ func parseAtom(b []byte) (ret Atom, size uint, err error) {
         ret = Atom(b[2:size])
       } else {
         err = StructuralError{"wrong atom size"}
+      }
+    } else {
+      err = StructuralError{
+        fmt.Sprintf("invalid small atom length (%d)", len(b)),
       }
     }
 
@@ -99,8 +107,10 @@ func parseBigInt(b []byte) (ret *big.Int, size uint, err error) {
       if b[2] != 0 {
         ret = ret.Neg(ret)
       }
-
-      return
+    } else {
+      err = StructuralError{
+        fmt.Sprintf("invalid small big integer length (%d)", len(b)),
+      }
     }
 
   case erlLargeBig:
@@ -116,15 +126,18 @@ func parseBigInt(b []byte) (ret *big.Int, size uint, err error) {
         if b[5] != 0 {
           ret = ret.Neg(ret)
         }
-
-        return
       } else {
         err = StructuralError{"invalid large bigInt"}
       }
+    } else {
+      err = StructuralError{
+        fmt.Sprintf("invalid large big integer length (%d)", len(b)),
+      }
     }
-  }
 
-  err = SyntaxError{"not a big integer"}
+  default:
+    err = SyntaxError{"not a big integer"}
+  }
 
   return
 }
@@ -192,12 +205,20 @@ func parseInt64(b []byte) (ret int64, size uint, err error) {
     // $aI
     if len(b) >= 2 {
       return int64(b[1]), 2, nil
+    } else {
+      err = StructuralError{
+        fmt.Sprintf("invalid small integer length (%d)", len(b)),
+      }
     }
 
   case erlInteger:
     // $bIIII
     if len(b) >= 5 {
       return int64(int(be.Uint32(b[1:5]))), 5, nil
+    } else {
+      err = StructuralError{
+        fmt.Sprintf("invalid integer length (%d)", len(b)),
+      }
     }
 
   case erlSmallBig, erlLargeBig:
@@ -212,10 +233,9 @@ func parseInt64(b []byte) (ret int64, size uint, err error) {
       }
     }
 
-    return
+  default:
+    err = SyntaxError{"not an integer"}
   }
-
-  err = SyntaxError{"not an integer"}
 
   return
 }
@@ -301,6 +321,10 @@ func parseString(b []byte) (ret string, size uint, err error) {
 
       size++
       err = nil
+    } else {
+      err = StructuralError{
+        fmt.Sprintf("invalid list length (%d)", len(b)),
+      }
     }
 
   case erlNil:
