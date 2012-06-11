@@ -36,6 +36,12 @@ func Test_parseAtom(t *testing.T) {
   assert.Equal(t, Atom("abc"), v)
   assert.Equal(t, uint(6), size)
 
+  // "abc" as SmallAtom
+  v, size, err = parseAtom([]byte{115,3,97,98,99})
+  assert.Equal(t, nil, err)
+  assert.Equal(t, Atom("abc"), v)
+  assert.Equal(t, uint(5), size)
+
   // error
   v, size, err = parseAtom([]byte{100,0,4,97,98,99})
   assert.NotEqual(t, nil, err)

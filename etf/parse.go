@@ -54,8 +54,9 @@ func (err SyntaxError) Error() string {
 
 // parseAtom
 func parseAtom(b []byte) (ret Atom, size uint, err error) {
-  if erlType(b[0]) == erlAtom {
-    // erlAtom $dLL…
+  switch erlType(b[0]) {
+  case erlAtom:
+    // $dLL…
     if len(b) > 3 {
       size = 3 + uint(be.Uint16(b[1:3]))
 
@@ -64,12 +65,23 @@ func parseAtom(b []byte) (ret Atom, size uint, err error) {
       } else {
         err = StructuralError{"wrong atom size"}
       }
-
-      return
     }
-  }
 
-  err = SyntaxError{"not an atom"}
+  case erlSmallAtom:
+    // $sL…
+    if len(b) > 2 {
+      size = 2 + uint(b[1])
+
+      if uint(len(b)) >= size {
+        ret = Atom(b[2:size])
+      } else {
+        err = StructuralError{"wrong atom size"}
+      }
+    }
+
+  default:
+    err = SyntaxError{"not an atom"}
+  }
 
   return
 }

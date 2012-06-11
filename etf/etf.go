@@ -44,6 +44,7 @@ const (
   erlPid          = erlType('g')
   erlPort         = erlType('f')
   erlReference    = erlType('e')
+  erlSmallAtom    = erlType('s')
   erlSmallBig     = erlType('n')
   erlSmallInteger = erlType('a')
   erlSmallTuple   = erlType('h')
