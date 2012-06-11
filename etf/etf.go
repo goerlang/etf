@@ -58,7 +58,7 @@ func reverseBytes(b []byte) []byte {
   r := make([]byte, size)
 
   for i := 0; i < size; i++ {
-    r[i] = b[size - i - 1]
+    r[i] = b[size-i-1]
   }
 
   return r
