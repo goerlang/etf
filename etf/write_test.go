@@ -26,52 +26,78 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import (
   "bytes"
   "github.com/bmizerany/assert"
+  "io"
+  r "reflect"
   "testing"
 )
 
-func Test_writeString(t *testing.T) {
-  var size uint
-  var v string
-  var resultString string
+func testWrite(
+  t *testing.T,
+  fi, pi, v interface{},
+  shouldSize uint,
+  shouldError bool,
+  args ...interface{}) {
+
+  f := func(w io.Writer, data interface{}) interface{} {
+    return r.ValueOf(fi).Call([]r.Value{
+      r.ValueOf(w),
+      r.ValueOf(data),
+    })[0].Interface()
+  }
+
+  p := func(b []byte) (ret interface{}, size uint, err interface{}) {
+    result := r.ValueOf(pi).Call([]r.Value{r.ValueOf(b)})
+    ret = result[0].Interface()
+    size = result[1].Interface().(uint)
+    err = result[2].Interface()
+    return
+  }
+
+  var result interface{}
   var resultSize uint
-  var err error
+  var err interface{}
 
   w := new(bytes.Buffer)
-
-  // 65535 'a'
   w.Reset()
-  v = string(bytes.Repeat([]byte{'a'}, 65535))
-  size = 3 + uint(len(v))
-  err = writeString(w, v)
-  assert.Equal(t, nil, err)
-  assert.Equal(t, size, uint(w.Len()))
-  resultString, resultSize, err = parseString(w.Bytes())
-  assert.Equal(t, nil, err)
-  assert.Equal(t, v, resultString)
-  assert.Equal(t, size, resultSize)
+  err = f(w, v)
 
-  // empty string
-  w.Reset()
-  v = ""
-  size = 3
-  err = writeString(w, v)
-  assert.Equal(t, nil, err)
-  assert.Equal(t, size, uint(w.Len()))
-  resultString, resultSize, err = parseString(w.Bytes())
-  assert.Equal(t, nil, err)
-  assert.Equal(t, v, resultString)
-  assert.Equal(t, size, resultSize)
-
-  // error (65536 'a')
-  w.Reset()
-  v = string(bytes.Repeat([]byte{'a'}, 65536))
-  err = writeString(w, v)
-  assert.NotEqual(t, nil, err)
-  switch err.(type) {
-  case EncodeError:
-  default:
-    t.Fatalf("error is not EncodeError, but %T", err)
+  if !shouldError {
+    assert.Equal(t, nil, err, args...)
+    assert.Equal(t, shouldSize, uint(w.Len()), args...)
+    result, resultSize, err = p(w.Bytes())
+    assert.Equal(t, nil, err, args...)
+    assert.Equal(t, v, result, args...)
+    assert.Equal(t, shouldSize, resultSize, args...)
+  } else {
+    assert.NotEqual(t, nil, err, args...)
+    switch err.(type) {
+    case EncodeError:
+    default:
+      t.Fatalf("error is not EncodeError, but %T (%#v)", err, args)
+    }
   }
+}
+
+func Test_writeAtom(t *testing.T) {
+  testWriteAtom := func(v string, headerSize uint, shouldError bool, args ...interface{}) {
+    testWrite(t, writeAtom, parseAtom, Atom(v), headerSize + uint(len(v)), shouldError, args)
+  }
+
+  testWriteAtom(string(bytes.Repeat([]byte{'a'}, 255)), 2, false, "255 $a")
+  testWriteAtom(string(bytes.Repeat([]byte{'a'}, 256)), 3, false, "256 $a")
+  testWriteAtom("", 2, false, "'' (empty atom)")
+  testWriteAtom(string(bytes.Repeat([]byte{'a'}, 65535)), 3, false, "65535 $a")
+  testWriteAtom(string(bytes.Repeat([]byte{'a'}, 65536)), 3, true, "65536 $a")
+}
+
+func Test_writeString(t *testing.T) {
+  testWriteString := func(v string, headerSize uint, shouldError bool, args ...interface{}) {
+    testWrite(t, writeString, parseString, v, headerSize + uint(len(v)), shouldError, args...)
+  }
+
+  testWriteString(string(bytes.Repeat([]byte{'a'}, 65535)), 3, false, "65535 $a")
+  testWriteString("", 3, false, `"" (empty string)`)
+  testWriteString(string(bytes.Repeat([]byte{'a'}, 65536)), 3, true, "65536 $a")
 }
 
 // Local Variables:

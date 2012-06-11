@@ -29,19 +29,48 @@ import (
   "io"
 )
 
+// writeBE
+func writeBE(w io.Writer, data ...interface{}) error {
+  for _, v := range data {
+    err := bin.Write(w, be, v)
+
+    if err != nil {
+      return err
+    }
+  }
+
+  return nil
+}
+
+// writeAtom
 func writeAtom(w io.Writer, a Atom) (err error) {
+  size := len(a)
+
+  switch {
+  case size <= 0xff:
+    // $sL…
+    err = writeBE(w, be, byte(erlSmallAtom), byte(size), []byte(string(a)))
+
+  case size <= 0xffff:
+    // $dLL…
+    err = writeBE(w, be, byte(erlAtom), uint16(size), []byte(string(a)))
+
+  default:
+    err = EncodeError{fmt.Sprintf("atom is too big (%d bytes)", size)}
+  }
+
   return
 }
 
+// writeString
 func writeString(w io.Writer, s string) (err error) {
-  size := len(s)
+  switch size := len(s); {
+  case size <= 0xffff:
+    // $kLL…
+    err = writeBE(w, byte(erlString), uint16(size), []byte(s))
 
-  if int(uint16(size)) != size {
+  default:
     err = EncodeError{fmt.Sprintf("string is too big (%d bytes)", size)}
-  } else {
-    bin.Write(w, be, byte(erlString))
-    bin.Write(w, be, uint16(size))
-    bin.Write(w, be, []byte(s))
   }
 
   return
