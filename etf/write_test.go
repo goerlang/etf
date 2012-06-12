@@ -27,6 +27,7 @@ import (
   "bytes"
   "github.com/bmizerany/assert"
   "io"
+  "math"
   r "reflect"
   "testing"
 )
@@ -83,11 +84,11 @@ func Test_writeAtom(t *testing.T) {
     testWrite(t, writeAtom, parseAtom, Atom(v), headerSize + uint(len(v)), shouldError, args...)
   }
 
-  testWriteAtom(string(bytes.Repeat([]byte{'a'}, 255)), 2, false, "255 $a")
-  testWriteAtom(string(bytes.Repeat([]byte{'a'}, 256)), 3, false, "256 $a")
+  testWriteAtom(string(bytes.Repeat([]byte{'a'}, math.MaxUint8 + 0)), 2, false, "255 $a")
+  testWriteAtom(string(bytes.Repeat([]byte{'a'}, math.MaxUint8 + 1)), 3, false, "256 $a")
   testWriteAtom("", 2, false, "'' (empty atom)")
-  testWriteAtom(string(bytes.Repeat([]byte{'a'}, 65535)), 3, false, "65535 $a")
-  testWriteAtom(string(bytes.Repeat([]byte{'a'}, 65536)), 3, true, "65536 $a")
+  testWriteAtom(string(bytes.Repeat([]byte{'a'}, math.MaxUint16 + 0)), 3, false, "65535 $a")
+  testWriteAtom(string(bytes.Repeat([]byte{'a'}, math.MaxUint16 + 1)), 3, true, "65536 $a")
 }
 
 func Test_writeBool(t *testing.T) {
@@ -105,8 +106,8 @@ func Test_writeFloat64(t *testing.T) {
   }
 
   testWriteFloat64(0.0)
-  testWriteFloat64(999.666)
-  testWriteFloat64(-999.666)
+  testWriteFloat64(math.SmallestNonzeroFloat64)
+  testWriteFloat64(math.MaxFloat64)
 }
 
 func Test_writeInt64_and_BigInt(t *testing.T) {
@@ -116,12 +117,12 @@ func Test_writeInt64_and_BigInt(t *testing.T) {
 
   testWriteInt64(0, 2, false, "0")
   testWriteInt64(-1, 5, false, "0")
-  testWriteInt64(255, 2, false, "255")
-  testWriteInt64(256, 5, false, "256")
-  testWriteInt64(0x7fffffff, 5, false, "0x7fffffff")
-  testWriteInt64(0x80000000, 7, false, "0x80000000")
-  testWriteInt64(-0x80000000, 5, false, "-0x80000000")
-  testWriteInt64(-0x80000001, 7, false, "-0x80000001")
+  testWriteInt64(math.MaxUint8 + 0, 2, false, "255")
+  testWriteInt64(math.MaxUint8 + 1, 5, false, "256")
+  testWriteInt64(math.MaxInt32 + 0, 5, false, "0x7fffffff")
+  testWriteInt64(math.MaxInt32 + 1, 7, false, "0x80000000")
+  testWriteInt64(math.MinInt32 + 0, 5, false, "-0x80000000")
+  testWriteInt64(math.MinInt32 - 1, 7, false, "-0x80000001")
 }
 
 func Test_writeString(t *testing.T) {
@@ -129,9 +130,9 @@ func Test_writeString(t *testing.T) {
     testWrite(t, writeString, parseString, v, headerSize + uint(len(v)), shouldError, args...)
   }
 
-  testWriteString(string(bytes.Repeat([]byte{'a'}, 65535)), 3, false, "65535 $a")
+  testWriteString(string(bytes.Repeat([]byte{'a'}, math.MaxUint16 + 0)), 3, false, "65535 $a")
   testWriteString("", 3, false, `"" (empty string)`)
-  testWriteString(string(bytes.Repeat([]byte{'a'}, 65536)), 3, true, "65536 $a")
+  testWriteString(string(bytes.Repeat([]byte{'a'}, math.MaxUint16 + 1)), 3, true, "65536 $a")
 }
 
 // Local Variables:
