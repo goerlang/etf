@@ -245,6 +245,30 @@ func Test_parseBigInt(t *testing.T) {
   assert.Equal(t, uint(len(b)), size)
 }
 
+func Benchmark_parseFloat64(b *testing.B) {
+  b.StopTimer()
+
+  rand.Seed(time.Now().UnixNano())
+  max := 64
+  floats := make([][]byte, max)
+
+  for i := 0; i < max; i++ {
+    w := new(bytes.Buffer)
+    writeFloat64(w, rand.ExpFloat64())
+    floats[i] = w.Bytes()
+  }
+
+  b.StartTimer()
+
+  for i := 0; i < b.N; i++ {
+    _, _, err := parseFloat64(floats[i % max])
+
+    if err != nil {
+      b.Fatal("failed to parse float")
+    }
+  }
+}
+
 func Test_parseFloat64(t *testing.T) {
   // 0.1
   v, size, err := parseFloat64([]byte{
