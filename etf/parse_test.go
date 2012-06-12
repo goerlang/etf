@@ -249,12 +249,12 @@ func Benchmark_parseFloat64(b *testing.B) {
   b.StopTimer()
 
   rand.Seed(time.Now().UnixNano())
-  max := 64
+  max := 512
   floats := make([][]byte, max)
 
   for i := 0; i < max; i++ {
     w := new(bytes.Buffer)
-    writeFloat64(w, rand.ExpFloat64())
+    writeFloat64(w, rand.ExpFloat64() - rand.ExpFloat64())
     floats[i] = w.Bytes()
   }
 
