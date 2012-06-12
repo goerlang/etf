@@ -24,13 +24,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 import (
-  bin "encoding/binary"
+  "encoding/binary"
   "fmt"
   "math"
   "math/big"
 )
 
-var be = bin.BigEndian
+var be = binary.BigEndian
 
 const (
   errPrefix = "Erlang external format "

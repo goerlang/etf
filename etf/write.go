@@ -24,7 +24,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 import (
-  bin "encoding/binary"
+  "encoding/binary"
   "fmt"
   "io"
   "math"
@@ -34,7 +34,7 @@ import (
 // writeBE
 func writeBE(w io.Writer, data ...interface{}) error {
   for _, v := range data {
-    err := bin.Write(w, be, v)
+    err := binary.Write(w, be, v)
 
     if err != nil {
       return err
