@@ -63,11 +63,11 @@ func testWrite(
 
   if !shouldError {
     assert.Equal(t, nil, err, args...)
-    assert.Equal(t, shouldSize, uint(w.Len()), args...)
+    assert.Equalf(t, shouldSize, uint(w.Len()), "encode %v", args)
     result, resultSize, err = p(w.Bytes())
     assert.Equal(t, nil, err, args...)
     assert.Equal(t, v, result, args...)
-    assert.Equal(t, shouldSize, resultSize, args...)
+    assert.Equalf(t, shouldSize, resultSize, "decode %v", args)
   } else {
     assert.NotEqual(t, nil, err, args...)
     switch err.(type) {
@@ -80,7 +80,7 @@ func testWrite(
 
 func Test_writeAtom(t *testing.T) {
   testWriteAtom := func(v string, headerSize uint, shouldError bool, args ...interface{}) {
-    testWrite(t, writeAtom, parseAtom, Atom(v), headerSize + uint(len(v)), shouldError, args)
+    testWrite(t, writeAtom, parseAtom, Atom(v), headerSize + uint(len(v)), shouldError, args...)
   }
 
   testWriteAtom(string(bytes.Repeat([]byte{'a'}, 255)), 2, false, "255 $a")
@@ -88,6 +88,30 @@ func Test_writeAtom(t *testing.T) {
   testWriteAtom("", 2, false, "'' (empty atom)")
   testWriteAtom(string(bytes.Repeat([]byte{'a'}, 65535)), 3, false, "65535 $a")
   testWriteAtom(string(bytes.Repeat([]byte{'a'}, 65536)), 3, true, "65536 $a")
+}
+
+func Test_writeBool(t *testing.T) {
+  testWriteBool := func(b bool, totalSize uint, args ...interface{}) {
+    testWrite(t, writeBool, parseBool, b, totalSize, false, args...)
+  }
+
+  testWriteBool(true, 6, "true")
+  testWriteBool(false, 7, "false")
+}
+
+func Test_writeInt64_and_BigInt(t *testing.T) {
+  testWriteInt64 := func(x int64, totalSize uint, shouldError bool, args ...interface{}) {
+    testWrite(t, writeInt64, parseInt64, x, totalSize, shouldError, args...)
+  }
+
+  testWriteInt64(0, 2, false, "0")
+  testWriteInt64(-1, 5, false, "0")
+  testWriteInt64(255, 2, false, "255")
+  testWriteInt64(256, 5, false, "256")
+  testWriteInt64(0x7fffffff, 5, false, "0x7fffffff")
+  testWriteInt64(0x80000000, 7, false, "0x80000000")
+  testWriteInt64(-0x80000000, 5, false, "-0x80000000")
+  testWriteInt64(-0x80000001, 7, false, "-0x80000001")
 }
 
 func Test_writeString(t *testing.T) {
