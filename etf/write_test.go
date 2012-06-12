@@ -99,6 +99,16 @@ func Test_writeBool(t *testing.T) {
   testWriteBool(false, 7, "false")
 }
 
+func Test_writeFloat64(t *testing.T) {
+  testWriteFloat64 := func(f float64) {
+    testWrite(t, writeFloat64, parseFloat64, f, 9, false, f)
+  }
+
+  testWriteFloat64(0.0)
+  testWriteFloat64(999.666)
+  testWriteFloat64(-999.666)
+}
+
 func Test_writeInt64_and_BigInt(t *testing.T) {
   testWriteInt64 := func(x int64, totalSize uint, shouldError bool, args ...interface{}) {
     testWrite(t, writeInt64, parseInt64, x, totalSize, shouldError, args...)

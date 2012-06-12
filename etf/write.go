@@ -27,6 +27,7 @@ import (
   bin "encoding/binary"
   "fmt"
   "io"
+  "math"
   "math/big"
 )
 
@@ -97,6 +98,11 @@ func writeBool(w io.Writer, b bool) (err error) {
   }
 
   return
+}
+
+// writeFloat64
+func writeFloat64(w io.Writer, f float64) error {
+  return writeBE(w, be, byte(erlNewFloat), math.Float64bits(f))
 }
 
 // writeInt64
