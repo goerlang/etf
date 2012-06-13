@@ -26,6 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import (
   "bytes"
   "github.com/bmizerany/assert"
+  "math"
   "math/big"
   "math/rand"
   "testing"
@@ -208,6 +209,34 @@ func Test_parseInt64(t *testing.T) {
   case StructuralError:
   default:
     t.Fatalf("error is not StructuralError, but %T", err)
+  }
+}
+
+func Benchmark_parseBigInt(b *testing.B) {
+  b.StopTimer()
+
+  rand := rand.New(rand.NewSource(time.Now().UnixNano()))
+  uint64Max := big.NewInt(math.MaxInt64)
+  top := new(big.Int).Mul(uint64Max, uint64Max)
+  max := 512
+  bigints := make([][]byte, max)
+
+  for i := 0; i < max; i++ {
+    w := new(bytes.Buffer)
+    a := new(big.Int).Rand(rand, top)
+    b := new(big.Int).Rand(rand, top)
+    writeBigInt(w, new(big.Int).Sub(a, b))
+    bigints[i] = w.Bytes()
+  }
+
+  b.StartTimer()
+
+  for i := 0; i < b.N; i++ {
+    _, _, err := parseBigInt(bigints[i % max])
+
+    if err != nil {
+      b.Fatal("failed to parse big int")
+    }
   }
 }
 
