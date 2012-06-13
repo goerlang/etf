@@ -354,7 +354,7 @@ func Benchmark_parseString_64(b *testing.B) {
   }
 }
 
-func Test_parseString(t *testing.T) {
+func Test_parseString_and_Binary(t *testing.T) {
   // "" (nil)
   v, size, err := parseString([]byte{106})
   assert.Equal(t, nil, err)

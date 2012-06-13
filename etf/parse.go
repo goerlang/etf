@@ -142,6 +142,34 @@ func parseBigInt(b []byte) (ret *big.Int, size uint, err error) {
   return
 }
 
+// parseBinary
+func parseBinary(b []byte) (ret []byte, size uint, err error) {
+  switch erlType(b[0]) {
+  case erlBinary:
+    // $mLLLL…
+    if len(b) >= 5 {
+      size = 5 + uint(be.Uint32(b[1:5]))
+
+      if uint(len(b)) >= size {
+        ret = b[5:size]
+      } else {
+        err = StructuralError{
+          fmt.Sprintf("invalid binary size (%d), len=%d", size, len(b)),
+        }
+      }
+    } else {
+      err = StructuralError{
+        fmt.Sprintf("invalid binary length (%d)", len(b)),
+      }
+    }
+
+  default:
+    err = SyntaxError{"not a binary"}
+  }
+
+  return
+}
+
 // parseBool
 func parseBool(b []byte) (ret bool, size uint, err error) {
   var v Atom
@@ -262,22 +290,9 @@ func parseString(b []byte) (ret string, size uint, err error) {
     }
 
   case erlBinary:
-    // $mLLLL…
-    if len(b) >= 5 {
-      size = 5 + uint(be.Uint32(b[1:5]))
-
-      if uint(len(b)) >= size {
-        ret = string(b[5:size])
-      } else {
-        err = StructuralError{
-          fmt.Sprintf("invalid binary size (%d), len=%d", size, len(b)),
-        }
-      }
-    } else {
-      err = StructuralError{
-        fmt.Sprintf("invalid binary length (%d)", len(b)),
-      }
-    }
+    var r []byte
+    r, size, err = parseBinary(b)
+    ret = string(r)
 
   case erlList:
     // $lLLLL…$j
