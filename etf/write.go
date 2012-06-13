@@ -87,6 +87,20 @@ func writeBigInt(w io.Writer, x *big.Int) (err error) {
   return
 }
 
+// writeBinary
+func writeBinary(w io.Writer, bytes []byte) (err error) {
+  switch size := len(bytes); {
+  case int(uint32(size)) == size:
+    // $mLLLL…
+    err = writeBE(w, be, byte(erlBinary), uint32(len(bytes)), bytes)
+
+  default:
+    err = EncodeError{fmt.Sprintf("bad binary size (%d)", size)}
+  }
+
+  return
+}
+
 // writeBool
 func writeBool(w io.Writer, b bool) (err error) {
   switch b {

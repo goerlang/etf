@@ -91,6 +91,15 @@ func Test_writeAtom(t *testing.T) {
   testWriteAtom(string(bytes.Repeat([]byte{'a'}, math.MaxUint16 + 1)), 3, true, "65536 $a")
 }
 
+func Test_writeBinary(t *testing.T) {
+  testWriteBinary := func(bytes []byte, headerSize uint, shouldError bool, args ...interface{}) {
+    testWrite(t, writeBinary, parseBinary, bytes, headerSize + uint(len(bytes)), shouldError, args...)
+  }
+
+  testWriteBinary([]byte{}, 5, false, "empty binary")
+  testWriteBinary(bytes.Repeat([]byte{1}, 64), 5, false, "65535 bytes binary")
+}
+
 func Test_writeBool(t *testing.T) {
   testWriteBool := func(b bool, totalSize uint, args ...interface{}) {
     testWrite(t, writeBool, parseBool, b, totalSize, false, args...)
