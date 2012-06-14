@@ -51,7 +51,48 @@ const (
   erlString       = erlType('k')
 )
 
+type Term interface{}
+
 type Atom string
+
+type Node Atom
+
+type Pid struct {
+  node     Node
+  id       uint32
+  serial   uint32
+  creation byte
+}
+
+type Port struct {
+  node     Node
+  id       uint32
+  creation byte
+}
+
+type Reference struct {
+  node     Node
+  creation byte
+  id       []uint32
+}
+
+type Function struct {
+  arity      byte
+  unique     [16]byte
+  index      uint32
+  free       uint32
+  module     Atom
+  oldIndex   uint32
+  oldUnique  uint32
+  pid        Pid
+  freeVars   []Term
+}
+
+type Export struct {
+  module   Atom
+  function Atom
+  arity    byte
+}
 
 func reverseBytes(b []byte) []byte {
   size := len(b)
