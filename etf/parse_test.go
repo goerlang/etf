@@ -272,6 +272,18 @@ func Test_parseBigInt(t *testing.T) {
   assert.Equal(t, nil, err)
   assert.T(t, new(big.Int).Neg(new(big.Int).Lsh(big.NewInt(1), 2040)).Cmp(v) == 0)
   assert.Equal(t, uint(len(b)), size)
+
+  // 0 (small big)
+  v, size, err = parseBigInt([]byte{110,0,0})
+  assert.Equal(t, nil, err)
+  assert.T(t, big.NewInt(0).Cmp(v) == 0)
+  assert.Equal(t, uint(3), size)
+
+  // 0 (large big)
+  v, size, err = parseBigInt([]byte{111,0,0,0,0,0})
+  assert.Equal(t, nil, err)
+  assert.T(t, big.NewInt(0).Cmp(v) == 0)
+  assert.Equal(t, uint(6), size)
 }
 
 func Benchmark_parseFloat64(b *testing.B) {

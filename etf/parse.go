@@ -99,7 +99,7 @@ func parseBigInt(b []byte) (ret *big.Int, size uint, err error) {
   switch erlType(b[0]) {
   case erlSmallBig:
     // $nAS…
-    if len(b) > 3 && len(b)-3 >= int(b[1]) {
+    if len(b) >= 3 && len(b)-3 >= int(b[1]) {
       size = 3 + uint(b[1])
       b2 := reverseBytes(b[3 : 3+int(b[1])])
       ret = new(big.Int).SetBytes(b2)
@@ -115,7 +115,7 @@ func parseBigInt(b []byte) (ret *big.Int, size uint, err error) {
 
   case erlLargeBig:
     // $oAAAAS…
-    if len(b) > 6 {
+    if len(b) >= 6 {
       length := uint(be.Uint32(b[1:5]))
       size = 6 + length
 
