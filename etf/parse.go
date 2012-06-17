@@ -268,6 +268,15 @@ func parseInt64(b []byte) (ret int64, size uint, err error) {
   return
 }
 
+// parseUint64
+func parseUint64(b []byte) (ret uint64, size uint, err error) {
+  var result int64
+  result, size, err = parseInt64(b)
+  ret = uint64(result)
+
+  return
+}
+
 // parseString
 func parseString(b []byte) (ret string, size uint, err error) {
   switch erlType(b[0]) {
