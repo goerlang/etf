@@ -1,6 +1,6 @@
 go.etf
 ======
 
-Erlang external format encoding/decoding for Go.
+Erlang external term format encoding/decoding for Go.
 
 **WIP**
