@@ -51,6 +51,11 @@ const (
   erlString       = erlType('k')
 )
 
+const (
+  // Erlang external format version number.
+  erlFormatVersion = byte(131)
+)
+
 type Term interface{}
 
 type Atom string
