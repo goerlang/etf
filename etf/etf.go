@@ -82,15 +82,15 @@ type Reference struct {
 }
 
 type Function struct {
-  arity      byte
-  unique     [16]byte
-  index      uint32
-  free       uint32
-  module     Atom
-  oldIndex   uint32
-  oldUnique  uint32
-  pid        Pid
-  freeVars   []Term
+  arity     byte
+  unique    [16]byte
+  index     uint32
+  free      uint32
+  module    Atom
+  oldIndex  uint32
+  oldUnique uint32
+  pid       Pid
+  freeVars  []Term
 }
 
 type Export struct {
