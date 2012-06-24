@@ -40,7 +40,7 @@ func Test_Decode_BigInt(t *testing.T) {
 }
 
 func Test_Decode_Binary(t *testing.T) {
-  var data []interface{}
+  var data []byte
 
   size, err := Decode([]byte{131,109,0,0,0,3,1,2,3}, &data)
   assert.Equal(t, nil, err)
