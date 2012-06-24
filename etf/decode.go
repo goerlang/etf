@@ -137,6 +137,24 @@ func decodePtr(b []byte, ptr Value) (size uint, err error) {
   return
 }
 
+// decodeSlice decodes a slice.
+func decodeSlice(b []byte, ptr Value) (size uint, err error) {
+  v := ptr.Elem()
+
+  switch v.Interface().(type) {
+  case []byte:
+    var result []byte
+    if result, size, err = parseBinary(b); err == nil {
+      v.SetBytes(result)
+    }
+
+  default:
+    err = TypeError{v.Type()}
+  }
+
+  return
+}
+
 func decode(b []byte, ptr Value) (size uint, err error) {
   v := ptr.Elem()
 
@@ -201,6 +219,9 @@ func decode(b []byte, ptr Value) (size uint, err error) {
 
   case Ptr:
     size, err = decodePtr(b, ptr)
+
+  case Slice:
+    size, err = decodeSlice(b, ptr)
 
   default:
     err = TypeError{v.Type()}
