@@ -50,7 +50,11 @@ type VersionError struct {
 }
 
 func (err OverflowError) Error() string {
-  return fmt.Sprintf("overflow error: cannot represent %s by type %s", err.Value, err.Type)
+  return fmt.Sprintf(
+    "overflow error: cannot represent %s by type %s",
+    err.Value,
+    err.Type,
+  )
 }
 
 func (err TypeError) Error() string {
@@ -100,7 +104,13 @@ func decodeStruct(b []byte, ptr Value) (size uint, err error) {
 
 decode:
   if arity != v.NumField() {
-    err = StructuralError{fmt.Sprintf("different number of fields (%d, should be %d)", v.NumField(), arity)}
+    err = StructuralError{
+      fmt.Sprintf(
+        "different number of fields (%d, should be %d)",
+        v.NumField(),
+        arity,
+      ),
+    }
     return
   }
 
