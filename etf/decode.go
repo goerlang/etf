@@ -25,6 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import (
   "fmt"
+  "math/big"
   . "reflect"
 )
 
@@ -60,7 +61,7 @@ func (err VersionError) Error() string {
   return fmt.Sprintf("version error: version %d is not supported", err.Version)
 }
 
-// decodeStruct decodes a structure.
+// decodeStruct decodes a structure from tuple.
 func decodeStruct(b []byte, ptr Value) (size uint, err error) {
   var arity int
 
@@ -113,6 +114,24 @@ decode:
     if err != nil {
       break
     }
+  }
+
+  return
+}
+
+// decodePtr decodes a specific type of data.
+func decodePtr(b []byte, ptr Value) (size uint, err error) {
+  v := ptr.Elem()
+
+  switch v.Interface().(type) {
+  case *big.Int:
+    var result *big.Int
+    if result, size, err = parseBigInt(b); err == nil {
+      v.Set(ValueOf(result))
+    }
+
+  default:
+    err = TypeError{v.Type()}
   }
 
   return
@@ -179,6 +198,9 @@ func decode(b []byte, ptr Value) (size uint, err error) {
 
   case Struct:
     size, err = decodeStruct(b, ptr)
+
+  case Ptr:
+    size, err = decodePtr(b, ptr)
 
   default:
     err = TypeError{v.Type()}

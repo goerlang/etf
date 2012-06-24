@@ -25,8 +25,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import (
   "github.com/bmizerany/assert"
+  "math/big"
   "testing"
 )
+
+func Test_Decode_BigInt(t *testing.T) {
+  var bigint *big.Int
+
+  size, err := Decode([]byte{131,110,15,0,0,0,0,0,16,
+    159,75,179,21,7,201,123,206,151,192,
+  }, &bigint)
+  assert.Equal(t, nil, err)
+  assert.Equal(t, uint(19), size)
+}
 
 func Test_Decode(t *testing.T) {
   var s string
