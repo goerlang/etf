@@ -28,27 +28,27 @@ type erlType byte
 // Erlang types.
 const (
   erlAtom         = erlType('d')
-  erlBinary       = erlType('m')
-  erlCachedAtom   = erlType('C')
-  erlFloat        = erlType('c')
-  erlFun          = erlType('u')
-  erlInteger      = erlType('b')
-  erlLargeBig     = erlType('o')
-  erlLargeTuple   = erlType('i')
-  erlList         = erlType('l')
-  erlNewCache     = erlType('N')
-  erlNewFloat     = erlType('F')
-  erlNewFun       = erlType('p')
-  erlNewReference = erlType('r')
-  erlNil          = erlType('j')
-  erlPid          = erlType('g')
-  erlPort         = erlType('f')
-  erlReference    = erlType('e')
-  erlSmallAtom    = erlType('s')
-  erlSmallBig     = erlType('n')
-  erlSmallInteger = erlType('a')
-  erlSmallTuple   = erlType('h')
-  erlString       = erlType('k')
+  erlBinary       = 'm'
+  erlCachedAtom   = 'C'
+  erlFloat        = 'c'
+  erlFun          = 'u'
+  erlInteger      = 'b'
+  erlLargeBig     = 'o'
+  erlLargeTuple   = 'i'
+  erlList         = 'l'
+  erlNewCache     = 'N'
+  erlNewFloat     = 'F'
+  erlNewFun       = 'p'
+  erlNewReference = 'r'
+  erlNil          = 'j'
+  erlPid          = 'g'
+  erlPort         = 'f'
+  erlReference    = 'e'
+  erlSmallAtom    = 's'
+  erlSmallBig     = 'n'
+  erlSmallInteger = 'a'
+  erlSmallTuple   = 'h'
+  erlString       = 'k'
 )
 
 const (
