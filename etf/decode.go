@@ -165,6 +165,31 @@ func decodeSlice(b []byte, ptr Value) (size uint, err error) {
   return
 }
 
+// decodeArray decodes an array.
+func decodeArray(b []byte, ptr Value) (size uint, err error) {
+  v := ptr.Elem()
+  length := v.Len()
+
+  switch v.Type().Elem().Kind() {
+  case Uint8:
+    var result []byte
+    if result, size, err = parseBinary(b); err == nil {
+      if length == len(result) {
+        for i := range result {
+          v.Index(i).SetUint(uint64(result[i]))
+        }
+      } else {
+        err = OverflowError{result, v.Type()}
+      }
+    }
+
+  default:
+    err = TypeError{v.Type()}
+  }
+
+  return
+}
+
 func decode(b []byte, ptr Value) (size uint, err error) {
   v := ptr.Elem()
 
@@ -232,6 +257,9 @@ func decode(b []byte, ptr Value) (size uint, err error) {
 
   case Slice:
     size, err = decodeSlice(b, ptr)
+
+  case Array:
+    size, err = decodeArray(b, ptr)
 
   default:
     err = TypeError{v.Type()}
