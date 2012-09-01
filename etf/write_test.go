@@ -25,7 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import (
   "bytes"
-  "github.com/bmizerany/assert"
+  "github.com/ftrvxmtrx/testingo"
   "io"
   "math"
   r "reflect"
@@ -33,7 +33,7 @@ import (
 )
 
 func testWrite(
-  t *testing.T,
+  t *testingo.TT,
   fi, pi, v interface{},
   shouldSize uint,
   shouldError bool,
@@ -63,14 +63,14 @@ func testWrite(
   err = f(w, v)
 
   if !shouldError {
-    assert.Equal(t, nil, err, args...)
-    assert.Equalf(t, shouldSize, uint(w.Len()), "encode %v", args)
+    t.AssertEq(nil, err, args...)
+    t.AssertEq(shouldSize, uint(w.Len()), "encode", args)
     result, resultSize, err = p(w.Bytes())
-    assert.Equal(t, nil, err, args...)
-    assert.Equal(t, v, result, args...)
-    assert.Equalf(t, shouldSize, resultSize, "decode %v", args)
+    t.AssertEq(nil, err, args...)
+    t.AssertEq(v, result, args...)
+    t.AssertEq(shouldSize, resultSize, "decode", args)
   } else {
-    assert.NotEqual(t, nil, err, args...)
+    t.AssertNotEq(nil, err, args...)
     switch err.(type) {
     case EncodeError:
     default:
@@ -79,7 +79,9 @@ func testWrite(
   }
 }
 
-func Test_writeAtom(t *testing.T) {
+func Test_writeAtom(t0 *testing.T) {
+  t := testingo.T(t0)
+
   testWriteAtom := func(v string, headerSize uint, shouldError bool, args ...interface{}) {
     testWrite(t, writeAtom, parseAtom, Atom(v), headerSize + uint(len(v)), shouldError, args...)
   }
@@ -91,7 +93,9 @@ func Test_writeAtom(t *testing.T) {
   testWriteAtom(string(bytes.Repeat([]byte{'a'}, math.MaxUint16 + 1)), 3, true, "65536 $a")
 }
 
-func Test_writeBinary(t *testing.T) {
+func Test_writeBinary(t0 *testing.T) {
+  t := testingo.T(t0)
+
   testWriteBinary := func(bytes []byte, headerSize uint, shouldError bool, args ...interface{}) {
     testWrite(t, writeBinary, parseBinary, bytes, headerSize + uint(len(bytes)), shouldError, args...)
   }
@@ -100,7 +104,9 @@ func Test_writeBinary(t *testing.T) {
   testWriteBinary(bytes.Repeat([]byte{1}, 64), 5, false, "65535 bytes binary")
 }
 
-func Test_writeBool(t *testing.T) {
+func Test_writeBool(t0 *testing.T) {
+  t := testingo.T(t0)
+
   testWriteBool := func(b bool, totalSize uint, args ...interface{}) {
     testWrite(t, writeBool, parseBool, b, totalSize, false, args...)
   }
@@ -109,7 +115,9 @@ func Test_writeBool(t *testing.T) {
   testWriteBool(false, 7, "false")
 }
 
-func Test_writeFloat64(t *testing.T) {
+func Test_writeFloat64(t0 *testing.T) {
+  t := testingo.T(t0)
+
   testWriteFloat64 := func(f float64) {
     testWrite(t, writeFloat64, parseFloat64, f, 9, false, f)
   }
@@ -119,7 +127,9 @@ func Test_writeFloat64(t *testing.T) {
   testWriteFloat64(math.MaxFloat64)
 }
 
-func Test_writeInt64_and_BigInt(t *testing.T) {
+func Test_writeInt64_and_BigInt(t0 *testing.T) {
+  t := testingo.T(t0)
+
   testWriteInt64 := func(x int64, totalSize uint, shouldError bool, args ...interface{}) {
     testWrite(t, writeInt64, parseInt64, x, totalSize, shouldError, args...)
   }
@@ -134,7 +144,9 @@ func Test_writeInt64_and_BigInt(t *testing.T) {
   testWriteInt64(math.MinInt32 - 1, 7, false, "-0x80000001")
 }
 
-func Test_writeString(t *testing.T) {
+func Test_writeString(t0 *testing.T) {
+  t := testingo.T(t0)
+
   testWriteString := func(v string, headerSize uint, shouldError bool, args ...interface{}) {
     testWrite(t, writeString, parseString, v, headerSize + uint(len(v)), shouldError, args...)
   }
