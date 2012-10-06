@@ -39,6 +39,13 @@ func Test_Decode_Array(t0 *testing.T) {
   t.AssertEq(byte(1), data[0])
   t.AssertEq(byte(2), data[1])
   t.AssertEq(byte(3), data[2])
+
+  size, err = Decode([]byte{131,107,0,3,1,2,3}, &data)
+  t.AssertEq(nil, err)
+  t.AssertEq(uint(7), size)
+  t.AssertEq(byte(1), data[0])
+  t.AssertEq(byte(2), data[1])
+  t.AssertEq(byte(3), data[2])
 }
 
 func Test_Decode_BigInt(t0 *testing.T) {

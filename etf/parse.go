@@ -144,14 +144,31 @@ func parseBigInt(b []byte) (ret *big.Int, size uint, err error) {
 
 // parseBinary
 func parseBinary(b []byte) (ret []byte, size uint, err error) {
-  switch erlType(b[0]) {
+  var s int
+
+  switch t := erlType(b[0]); t {
   case erlBinary:
     // $mLLLL…
-    if len(b) >= 5 {
-      size = 5 + uint(be.Uint32(b[1:5]))
+    s = 5
+
+  case erlString:
+    // $kLL…
+    s = 3
+
+  default:
+    err = SyntaxError{"not a binary"}
+  }
+
+  if err == nil {
+    if len(b) >= s {
+      if s == 5 {
+        size = uint(s) + uint(be.Uint32(b[1:s]))
+      } else {
+        size = uint(s) + uint(be.Uint16(b[1:s]))
+      }
 
       if uint(len(b)) >= size {
-        ret = b[5:size]
+        ret = b[s:size]
       } else {
         err = StructuralError{
           fmt.Sprintf("invalid binary size (%d), len=%d", size, len(b)),
@@ -162,9 +179,6 @@ func parseBinary(b []byte) (ret []byte, size uint, err error) {
         fmt.Sprintf("invalid binary length (%d)", len(b)),
       }
     }
-
-  default:
-    err = SyntaxError{"not a binary"}
   }
 
   return
