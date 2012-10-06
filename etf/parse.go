@@ -119,7 +119,7 @@ func parseBigInt(b []byte) (ret *big.Int, size uint, err error) {
       length := uint(be.Uint32(b[1:5]))
       size = 6 + length
 
-      if uint(len(b)) >= size && uint(int(length)+6) == length+6 {
+      if uint(len(b)) >= size && uint(int32(length)+6) == length+6 {
         b2 := reverseBytes(b[6 : 6+int(length)])
         ret = new(big.Int).SetBytes(b2)
 
@@ -256,7 +256,7 @@ func parseInt64(b []byte) (ret int64, size uint, err error) {
   case erlInteger:
     // $bIIII
     if len(b) >= 5 {
-      return int64(int(be.Uint32(b[1:5]))), 5, nil
+      return int64(int32(be.Uint32(b[1:5]))), 5, nil
     } else {
       err = StructuralError{
         fmt.Sprintf("invalid integer length (%d)", len(b)),
