@@ -34,6 +34,8 @@ const (
 )
 
 type Term interface{}
+type Tuple []Term
+type Array []Term
 
 type Atom string
 

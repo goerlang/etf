@@ -3,22 +3,22 @@ package etf
 import (
 	"fmt"
 	"math/big"
-	. "reflect"
+	r "reflect"
 )
 
 var (
-	atomType = ValueOf(Atom("")).Type()
+	atomType = r.ValueOf(Atom("")).Type()
 )
 
 // OverflowError is returned when number cannot be represented by supplied type.
 type OverflowError struct {
 	Value interface{}
-	Type  Type
+	Type  r.Type
 }
 
 // TypeError is returned when a type cannot be decoded.
 type TypeError struct {
-	Type Type
+	Type r.Type
 }
 
 // VersionError is returned on invalid Erlang external format version number.
@@ -43,7 +43,7 @@ func (err VersionError) Error() string {
 }
 
 // decodeStruct decodes a structure from tuple.
-func decodeStruct(b []byte, ptr Value) (size uint, err error) {
+func decodeStruct(b []byte, ptr r.Value) (size uint, err error) {
 	var arity int
 
 	v := ptr.Elem()
@@ -107,14 +107,14 @@ decode:
 }
 
 // decodePtr decodes a specific type of data.
-func decodePtr(b []byte, ptr Value) (size uint, err error) {
+func decodePtr(b []byte, ptr r.Value) (size uint, err error) {
 	v := ptr.Elem()
 
 	switch v.Interface().(type) {
 	case *big.Int:
 		var result *big.Int
 		if result, size, err = parseBigInt(b); err == nil {
-			v.Set(ValueOf(result))
+			v.Set(r.ValueOf(result))
 		}
 
 	default:
@@ -125,7 +125,7 @@ func decodePtr(b []byte, ptr Value) (size uint, err error) {
 }
 
 // decodeSlice decodes a slice.
-func decodeSlice(b []byte, ptr Value) (size uint, err error) {
+func decodeSlice(b []byte, ptr r.Value) (size uint, err error) {
 	v := ptr.Elem()
 
 	switch v.Interface().(type) {
@@ -143,12 +143,12 @@ func decodeSlice(b []byte, ptr Value) (size uint, err error) {
 }
 
 // decodeArray decodes an array.
-func decodeArray(b []byte, ptr Value) (size uint, err error) {
+func decodeArray(b []byte, ptr r.Value) (size uint, err error) {
 	v := ptr.Elem()
 	length := v.Len()
 
 	switch v.Type().Elem().Kind() {
-	case Uint8:
+	case r.Uint8:
 		var result []byte
 		if result, size, err = parseBinary(b); err == nil {
 			if length == len(result) {
@@ -167,17 +167,17 @@ func decodeArray(b []byte, ptr Value) (size uint, err error) {
 	return
 }
 
-func decode(b []byte, ptr Value) (size uint, err error) {
+func decode(b []byte, ptr r.Value) (size uint, err error) {
 	v := ptr.Elem()
 
 	switch v.Kind() {
-	case Bool:
+	case r.Bool:
 		var result bool
 		if result, size, err = parseBool(b); err == nil {
 			v.SetBool(result)
 		}
 
-	case Int, Int8, Int16, Int32, Int64:
+	case r.Int, r.Int8, r.Int16, r.Int32, r.Int64:
 		var result int64
 		if result, size, err = parseInt64(b); err == nil {
 			if v.OverflowInt(result) {
@@ -187,7 +187,7 @@ func decode(b []byte, ptr Value) (size uint, err error) {
 			}
 		}
 
-	case Uint, Uint8, Uint16, Uint32, Uint64:
+	case r.Uint, r.Uint8, r.Uint16, r.Uint32, r.Uint64:
 		var result uint64
 		if result, size, err = parseUint64(b); err == nil {
 			if v.OverflowUint(result) {
@@ -197,7 +197,7 @@ func decode(b []byte, ptr Value) (size uint, err error) {
 			}
 		}
 
-	case Float32:
+	case r.Float32:
 		var result float64
 		if result, size, err = parseFloat64(b); err == nil {
 			if v.OverflowFloat(result) {
@@ -207,35 +207,35 @@ func decode(b []byte, ptr Value) (size uint, err error) {
 			}
 		}
 
-	case Float64:
+	case r.Float64:
 		var result float64
 		if result, size, err = parseFloat64(b); err == nil {
 			v.SetFloat(result)
 		}
 
-	case String:
+	case r.String:
 		if v.Type() == atomType {
 			var result Atom
 			if result, size, err = parseAtom(b); err == nil {
-				v.Set(ValueOf(result))
+				v.Set(r.ValueOf(result))
 			}
 		} else {
 			var result string
 			if result, size, err = parseString(b); err == nil {
-				v.Set(ValueOf(result))
+				v.Set(r.ValueOf(result))
 			}
 		}
 
-	case Struct:
+	case r.Struct:
 		size, err = decodeStruct(b, ptr)
 
-	case Ptr:
+	case r.Ptr:
 		size, err = decodePtr(b, ptr)
 
-	case Slice:
+	case r.Slice:
 		size, err = decodeSlice(b, ptr)
 
-	case Array:
+	case r.Array:
 		size, err = decodeArray(b, ptr)
 
 	default:
@@ -250,7 +250,7 @@ func Decode(b []byte, ptr interface{}) (size uint, err error) {
 	if b[0] != erlFormatVersion {
 		err = VersionError{b[0]}
 	} else {
-		p := ValueOf(ptr)
+		p := r.ValueOf(ptr)
 		size, err = decode(b[1:], p)
 		size++
 	}
