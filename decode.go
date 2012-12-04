@@ -138,6 +138,55 @@ func decodeSlice(b []byte, ptr r.Value) (size uint, err error) {
 		}
 
 	default:
+		size, err = decodeList(b, ptr)
+	}
+
+	return
+}
+
+// decodeList decodes an Erlang list elements.
+func decodeList(b []byte, ptr r.Value) (size uint, err error) {
+	v := ptr.Elem()
+
+	switch v.Kind() {
+	case r.Slice, r.Array:
+		switch b[0] {
+		case erlList:
+			// $lLLLL…$j
+			if len(b) <= 5 {
+				err = StructuralError{
+					fmt.Sprintf("invalid list length (%d)", len(b)),
+				}
+				break
+			}
+
+			listLen := uint(be.Uint32(b[1:5]))
+			size = 5
+			b = b[size:]
+
+			slice := r.MakeSlice(v.Type(), int(listLen), int(listLen))
+			for i := uint(0); i < listLen; i++ {
+				if elemSize, err := decode(b, slice.Index(int(i)).Addr()); err == nil {
+					size += elemSize
+					b = b[elemSize:]
+				} else {
+					break
+				}
+			}
+
+			if len(b) < 1 || erlType(b[0]) != erlNil {
+				err = StructuralError{"got improper list"}
+			} else {
+				size++
+				v.Set(slice)
+			}
+
+		case erlNil:
+			// empty slice -- do not touch it
+			return 1, nil
+		}
+
+	default:
 		err = TypeError{v.Type()}
 	}
 
