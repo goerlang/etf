@@ -1,13 +1,15 @@
 package etf
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	r "reflect"
 )
 
 var (
-	atomType = r.ValueOf(Atom("")).Type()
+	atomType     = r.ValueOf(Atom("")).Type()
+	ErrBadFormat = errors.New("etf: bad format")
 )
 
 // OverflowError is returned when number cannot be represented by supplied type.
@@ -247,7 +249,9 @@ func decode(b []byte, ptr r.Value) (size uint, err error) {
 
 // Decode unmarshals a value and stores it to a variable pointer by ptr.
 func Decode(b []byte, ptr interface{}) (size uint, err error) {
-	if b[0] != erlFormatVersion {
+	if len(b) < 1 {
+		return 0, ErrBadFormat
+	} else if b[0] != erlFormatVersion {
 		err = VersionError{b[0]}
 	} else {
 		p := r.ValueOf(ptr)
