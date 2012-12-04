@@ -29,7 +29,6 @@ func (err SyntaxError) Error() string {
 	return errPrefix + "syntax error: " + err.Msg
 }
 
-// parseAtom
 func parseAtom(b []byte) (ret Atom, size uint, err error) {
 	switch erlType(b[0]) {
 	case erlAtom:
@@ -71,7 +70,6 @@ func parseAtom(b []byte) (ret Atom, size uint, err error) {
 	return
 }
 
-// parseBigInt
 func parseBigInt(b []byte) (ret *big.Int, size uint, err error) {
 	switch erlType(b[0]) {
 	case erlSmallBig:
@@ -119,7 +117,6 @@ func parseBigInt(b []byte) (ret *big.Int, size uint, err error) {
 	return
 }
 
-// parseBinary
 func parseBinary(b []byte) (ret []byte, size uint, err error) {
 	var s int
 
@@ -161,7 +158,6 @@ func parseBinary(b []byte) (ret []byte, size uint, err error) {
 	return
 }
 
-// parseBool
 func parseBool(b []byte) (ret bool, size uint, err error) {
 	var v Atom
 
@@ -184,7 +180,6 @@ func parseBool(b []byte) (ret bool, size uint, err error) {
 	return
 }
 
-// parseFloat64
 func parseFloat64(b []byte) (ret float64, size uint, err error) {
 	switch erlType(b[0]) {
 	case erlFloat:
@@ -217,7 +212,6 @@ func parseFloat64(b []byte) (ret float64, size uint, err error) {
 	return
 }
 
-// parseInt64
 func parseInt64(b []byte) (ret int64, size uint, err error) {
 	switch erlType(b[0]) {
 	case erlSmallInteger:
@@ -259,7 +253,6 @@ func parseInt64(b []byte) (ret int64, size uint, err error) {
 	return
 }
 
-// parseUint64
 func parseUint64(b []byte) (ret uint64, size uint, err error) {
 	var result int64
 	result, size, err = parseInt64(b)
@@ -268,7 +261,6 @@ func parseUint64(b []byte) (ret uint64, size uint, err error) {
 	return
 }
 
-// parseString
 func parseString(b []byte) (ret string, size uint, err error) {
 	switch erlType(b[0]) {
 	case erlString:
