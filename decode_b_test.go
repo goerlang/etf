@@ -10,13 +10,16 @@ func Benchmark_DecodeStruct(b0 *testing.B) {
 
 	type s1 struct {
 		Atom   Atom
+		priv0  int
 		Uint8  uint8
 		Uint16 uint16
 		Uint32 uint32
+		priv1  string
 		Byte   byte
 		Int    int
+		priv2  *s1
 		List   []s1
-		Binary [5]byte
+		Binary []byte
 	}
 
 	data := []byte{
