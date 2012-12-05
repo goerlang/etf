@@ -1,14 +1,17 @@
 package etf
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
+	p "github.com/goerlang/etf/parse"
+	t "github.com/goerlang/etf/types"
 	"math/big"
 	r "reflect"
 )
 
 var (
-	atomType     = r.ValueOf(Atom("")).Type()
+	atomType     = r.ValueOf(t.ErlAtom("")).Type()
 	ErrBadFormat = errors.New("etf: bad format")
 )
 
@@ -32,7 +35,7 @@ type VersionError struct {
 func Decode(b []byte, ptr interface{}) (size int, err error) {
 	if len(b) < 1 {
 		return 0, ErrBadFormat
-	} else if b[0] != erlFormatVersion {
+	} else if b[0] != t.ErlFormatVersion {
 		err = VersionError{b[0]}
 	} else {
 		p := r.ValueOf(ptr)
@@ -62,12 +65,12 @@ func decode(b []byte, ptr r.Value) (size int, err error) {
 	switch v.Kind() {
 	case r.Bool:
 		var result bool
-		if result, size, err = parseBool(b); err == nil {
+		if result, size, err = p.Bool(b); err == nil {
 			v.SetBool(result)
 		}
 	case r.Int, r.Int8, r.Int16, r.Int32, r.Int64:
 		var result int64
-		if result, size, err = parseInt64(b); err != nil {
+		if result, size, err = p.Int64(b); err != nil {
 			break
 		}
 		if v.OverflowInt(result) {
@@ -77,7 +80,7 @@ func decode(b []byte, ptr r.Value) (size int, err error) {
 		}
 	case r.Uint, r.Uint8, r.Uint16, r.Uint32, r.Uint64, r.Uintptr:
 		var result uint64
-		if result, size, err = parseUint64(b); err != nil {
+		if result, size, err = p.UInt64(b); err != nil {
 			break
 		}
 		if v.OverflowUint(result) {
@@ -87,7 +90,7 @@ func decode(b []byte, ptr r.Value) (size int, err error) {
 		}
 	case r.Float32, r.Float64:
 		var result float64
-		if result, size, err = parseFloat64(b); err != nil {
+		if result, size, err = p.Float64(b); err != nil {
 			break
 		}
 		if v.OverflowFloat(result) {
@@ -101,13 +104,13 @@ func decode(b []byte, ptr r.Value) (size int, err error) {
 		size, err = decodeSpecial(b, v)
 	case r.String:
 		if v.Type() == atomType {
-			var result Atom
-			if result, size, err = parseAtom(b); err == nil {
+			var result t.ErlAtom
+			if result, size, err = p.Atom(b); err == nil {
 				v.Set(r.ValueOf(result))
 			}
 		} else {
 			var result string
-			if result, size, err = parseString(b); err == nil {
+			if result, size, err = p.String(b); err == nil {
 				v.Set(r.ValueOf(result))
 			}
 		}
@@ -130,7 +133,7 @@ func decodeArray(b []byte, v r.Value) (size int, err error) {
 	switch v.Type().Elem().Kind() {
 	case r.Uint8:
 		var result []byte
-		if result, size, err = parseBinary(b); err == nil {
+		if result, size, err = p.Binary(b); err == nil {
 			if length == len(result) {
 				for i := range result {
 					v.Index(i).SetUint(uint64(result[i]))
@@ -151,16 +154,16 @@ func decodeList(b []byte, v r.Value) (size int, err error) {
 	switch v.Kind() {
 	case r.Slice, r.Array:
 		switch b[0] {
-		case erlList:
+		case t.ErlTypeList:
 			// $lLLLL…$j
 			if len(b) <= 5 {
-				err = StructuralError{
+				err = p.StructuralError{
 					fmt.Sprintf("invalid list length (%d)", len(b)),
 				}
 				break
 			}
 
-			listLen := uint(be.Uint32(b[1:5]))
+			listLen := uint(binary.BigEndian.Uint32(b[1:5]))
 			size = 5
 			b = b[size:]
 
@@ -174,14 +177,14 @@ func decodeList(b []byte, v r.Value) (size int, err error) {
 				}
 			}
 
-			if len(b) < 1 || erlType(b[0]) != erlNil {
-				err = StructuralError{"got improper list"}
+			if len(b) < 1 || t.ErlType(b[0]) != t.ErlTypeNil {
+				err = p.StructuralError{"got improper list"}
 			} else {
 				size++
 				v.Set(slice)
 			}
 
-		case erlNil:
+		case t.ErlTypeNil:
 			// empty slice -- do not touch it
 			return 1, nil
 		}
@@ -197,7 +200,7 @@ func decodeSlice(b []byte, v r.Value) (size int, err error) {
 	switch v.Interface().(type) {
 	case []byte:
 		var result []byte
-		if result, size, err = parseBinary(b); err == nil {
+		if result, size, err = p.Binary(b); err == nil {
 			v.SetBytes(result)
 		}
 
@@ -212,7 +215,7 @@ func decodeSpecial(b []byte, v r.Value) (size int, err error) {
 	switch v.Interface().(type) {
 	case *big.Int:
 		var result *big.Int
-		if result, size, err = parseBigInt(b); err == nil {
+		if result, size, err = p.BigInt(b); err == nil {
 			v.Set(r.ValueOf(result))
 		}
 
@@ -226,33 +229,33 @@ func decodeSpecial(b []byte, v r.Value) (size int, err error) {
 func decodeStruct(b []byte, v r.Value) (size int, err error) {
 	var arity int
 
-	switch erlType(b[0]) {
-	case erlSmallTuple:
+	switch t.ErlType(b[0]) {
+	case t.ErlTypeSmallTuple:
 		// $hA…
 		if len(b) >= 2 {
 			arity = int(b[1])
 			size = 2
 			goto decode
 		} else {
-			err = StructuralError{
+			err = p.StructuralError{
 				fmt.Sprintf("invalid tuple length (%d)", len(b)),
 			}
 		}
 
-	case erlLargeTuple:
+	case t.ErlTypeLargeTuple:
 		// $iAAAA…
 		if len(b) >= 5 {
-			arity = int(be.Uint32(b[1:5]))
+			arity = int(binary.BigEndian.Uint32(b[1:5]))
 			size = 5
 			goto decode
 		} else {
-			err = StructuralError{
+			err = p.StructuralError{
 				fmt.Sprintf("invalid tuple length (%d)", len(b)),
 			}
 		}
 
 	default:
-		err = SyntaxError{"not a tuple"}
+		err = p.SyntaxError{"not a tuple"}
 	}
 
 	return
@@ -274,7 +277,7 @@ decode:
 	}
 
 	if arity != fieldsSet {
-		err = StructuralError{
+		err = p.StructuralError{
 			fmt.Sprintf(
 				"different number of fields (%d, should be %d)",
 				v.NumField(),

@@ -2,6 +2,7 @@ package etf
 
 import (
 	"bytes"
+	"github.com/goerlang/etf/types"
 	"math/big"
 	"testing"
 )
@@ -66,7 +67,7 @@ func Test_decodeString(t *testing.T) {
 
 func Test_decodeStruct(t *testing.T) {
 	type testStruct struct {
-		Atom
+		types.ErlAtom
 		X uint8
 		S string
 	}
@@ -80,7 +81,7 @@ func Test_decodeStruct(t *testing.T) {
 		t.Fatal(err)
 	} else if size != len(in) {
 		t.Errorf("expected size %d, got %d", len(in), size)
-	} else if exp := (testStruct{Atom("blah"), 4, "фыва"}); ts != exp {
+	} else if exp := (testStruct{types.ErlAtom("blah"), 4, "фыва"}); ts != exp {
 		t.Errorf("expected %v, got %v", exp, ts)
 	}
 }
@@ -111,7 +112,7 @@ func Test_decodeStruct2(t *testing.T) {
 
 func Test_decodeStruct3(t *testing.T) {
 	type testStruct struct {
-		Atom
+		types.ErlAtom
 		X uint8
 		i *big.Int
 		S string
@@ -134,7 +135,7 @@ func Test_decodeStruct3(t *testing.T) {
 		t.Fatal(err)
 	} else if size != len(in) {
 		t.Errorf("expected size %d, got %d", len(in), size)
-	} else if exp := (testStruct3{testStruct{Atom("blah"), 4, nilBig, "фыва"}, nilArr, 666}); ts != exp {
+	} else if exp := (testStruct3{testStruct{types.ErlAtom("blah"), 4, nilBig, "фыва"}, nilArr, 666}); ts != exp {
 		t.Errorf("expected %v, got %v", exp, ts)
 	}
 }

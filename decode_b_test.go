@@ -1,12 +1,13 @@
 package etf
 
 import (
+	"github.com/goerlang/etf/types"
 	"testing"
 )
 
 func Benchmark_DecodeStruct(b *testing.B) {
 	type s1 struct {
-		Atom   Atom
+		Atom   types.ErlAtom
 		priv0  int
 		Uint8  uint8
 		Uint16 uint16

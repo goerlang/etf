@@ -2,6 +2,8 @@ package etf
 
 import (
 	"bytes"
+	"github.com/goerlang/etf/parse"
+	"github.com/goerlang/etf/types"
 	"io"
 	"math"
 	r "reflect"
@@ -80,7 +82,7 @@ func testWrite(
 
 func Test_writeAtom(t *testing.T) {
 	testWriteAtom := func(v string, headerSize int, shouldError bool, args ...interface{}) {
-		testWrite(t, writeAtom, parseAtom, Atom(v), headerSize+len(v), shouldError, args...)
+		testWrite(t, writeAtom, parse.Atom, types.ErlAtom(v), headerSize+len(v), shouldError, args...)
 	}
 
 	testWriteAtom(string(bytes.Repeat([]byte{'a'}, math.MaxUint8+0)), 2, false, "255 $a")
@@ -92,7 +94,7 @@ func Test_writeAtom(t *testing.T) {
 
 func Test_writeBinary(t *testing.T) {
 	testWriteBinary := func(bytes []byte, headerSize int, shouldError bool, args ...interface{}) {
-		testWrite(t, writeBinary, parseBinary, bytes, headerSize+len(bytes), shouldError, args...)
+		testWrite(t, writeBinary, parse.Binary, bytes, headerSize+len(bytes), shouldError, args...)
 	}
 
 	testWriteBinary([]byte{}, 5, false, "empty binary")
@@ -101,7 +103,7 @@ func Test_writeBinary(t *testing.T) {
 
 func Test_writeBool(t *testing.T) {
 	testWriteBool := func(b bool, totalSize int, args ...interface{}) {
-		testWrite(t, writeBool, parseBool, b, totalSize, false, args...)
+		testWrite(t, writeBool, parse.Bool, b, totalSize, false, args...)
 	}
 
 	testWriteBool(true, 6, "true")
@@ -110,7 +112,7 @@ func Test_writeBool(t *testing.T) {
 
 func Test_writeFloat64(t *testing.T) {
 	testWriteFloat64 := func(f float64) {
-		testWrite(t, writeFloat64, parseFloat64, f, 9, false, f)
+		testWrite(t, writeFloat64, parse.Float64, f, 9, false, f)
 	}
 
 	testWriteFloat64(0.0)
@@ -120,7 +122,7 @@ func Test_writeFloat64(t *testing.T) {
 
 func Test_writeInt64_and_BigInt(t *testing.T) {
 	testWriteInt64 := func(x int64, totalSize int, shouldError bool, args ...interface{}) {
-		testWrite(t, writeInt64, parseInt64, x, totalSize, shouldError, args...)
+		testWrite(t, writeInt64, parse.Int64, x, totalSize, shouldError, args...)
 	}
 
 	testWriteInt64(0, 2, false, "0")
@@ -135,7 +137,7 @@ func Test_writeInt64_and_BigInt(t *testing.T) {
 
 func Test_writeString(t *testing.T) {
 	testWriteString := func(v string, headerSize int, shouldError bool, args ...interface{}) {
-		testWrite(t, writeString, parseString, v, headerSize+len(v), shouldError, args...)
+		testWrite(t, writeString, parse.String, v, headerSize+len(v), shouldError, args...)
 	}
 
 	testWriteString(string(bytes.Repeat([]byte{'a'}, math.MaxUint16+0)), 3, false, "65535 $a")
