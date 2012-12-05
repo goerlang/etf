@@ -1,13 +1,10 @@
 package etf
 
 import (
-	"github.com/ftrvxmtrx/testingo"
 	"testing"
 )
 
-func Benchmark_DecodeStruct(b0 *testing.B) {
-	b := testingo.B(b0)
-
+func Benchmark_DecodeStruct(b *testing.B) {
 	type s1 struct {
 		Atom   Atom
 		priv0  int
@@ -28,15 +25,16 @@ func Benchmark_DecodeStruct(b0 *testing.B) {
 		1, 2, 3, 4, 5,
 	}
 
-	b.Logf("testing on binary of %d bytes", len(data))
-
 	var v s1
 	size, err := Decode(data, &v)
-	b.AssertEq(nil, err)
-	b.AssertEq(uint(len(data)), size)
-	b.Log(v)
+	if err != nil {
+		b.Fatal(err)
+	}
+	if len(data) != size {
+		b.Fatalf("expected size %d, got %d", len(data), size)
+	}
 
-	for i := 0; i < *b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		size, err = Decode(data, &v)
 	}
 }

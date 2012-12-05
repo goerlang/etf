@@ -29,14 +29,14 @@ func (err SyntaxError) Error() string {
 	return errPrefix + "syntax error: " + err.Msg
 }
 
-func parseAtom(b []byte) (ret Atom, size uint, err error) {
+func parseAtom(b []byte) (ret Atom, size int, err error) {
 	switch erlType(b[0]) {
 	case erlAtom:
 		// $dLL…
 		if len(b) >= 3 {
-			size = 3 + uint(be.Uint16(b[1:3]))
+			size = 3 + int(be.Uint16(b[1:3]))
 
-			if uint(len(b)) >= size {
+			if len(b) >= size {
 				ret = Atom(b[3:size])
 			} else {
 				err = StructuralError{"wrong atom size"}
@@ -50,9 +50,9 @@ func parseAtom(b []byte) (ret Atom, size uint, err error) {
 	case erlSmallAtom:
 		// $sL…
 		if len(b) >= 2 {
-			size = 2 + uint(b[1])
+			size = 2 + int(b[1])
 
-			if uint(len(b)) >= size {
+			if len(b) >= size {
 				ret = Atom(b[2:size])
 			} else {
 				err = StructuralError{"wrong atom size"}
@@ -70,12 +70,12 @@ func parseAtom(b []byte) (ret Atom, size uint, err error) {
 	return
 }
 
-func parseBigInt(b []byte) (ret *big.Int, size uint, err error) {
+func parseBigInt(b []byte) (ret *big.Int, size int, err error) {
 	switch erlType(b[0]) {
 	case erlSmallBig:
 		// $nAS…
 		if len(b) >= 3 && len(b)-3 >= int(b[1]) {
-			size = 3 + uint(b[1])
+			size = 3 + int(b[1])
 			b2 := reverseBytes(b[3 : 3+int(b[1])])
 			ret = new(big.Int).SetBytes(b2)
 
@@ -90,24 +90,31 @@ func parseBigInt(b []byte) (ret *big.Int, size uint, err error) {
 
 	case erlLargeBig:
 		// $oAAAAS…
-		if len(b) >= 6 {
-			length := uint(be.Uint32(b[1:5]))
-			size = 6 + length
-
-			if uint(len(b)) >= size && uint(int32(length)+6) == length+6 {
-				b2 := reverseBytes(b[6 : 6+int(length)])
-				ret = new(big.Int).SetBytes(b2)
-
-				if b[5] != 0 {
-					ret = ret.Neg(ret)
-				}
-			} else {
-				err = StructuralError{"invalid large bigInt"}
-			}
-		} else {
+		if len(b) < 6 {
 			err = StructuralError{
 				fmt.Sprintf("invalid large big integer length (%d)", len(b)),
 			}
+			break
+		}
+
+		ulength := be.Uint32(b[1:5])
+		length := int(ulength)
+		if uint32(length) != ulength {
+			err = fmt.Errorf("erlLargeBig size 0x%x overflows int type", ulength)
+			break
+		}
+
+		size = 6 + length
+
+		if len(b) >= size {
+			b2 := reverseBytes(b[6 : 6+length])
+			ret = new(big.Int).SetBytes(b2)
+
+			if b[5] != 0 {
+				ret = ret.Neg(ret)
+			}
+		} else {
+			err = StructuralError{"invalid large bigInt"}
 		}
 
 	default:
@@ -117,7 +124,7 @@ func parseBigInt(b []byte) (ret *big.Int, size uint, err error) {
 	return
 }
 
-func parseBinary(b []byte) (ret []byte, size uint, err error) {
+func parseBinary(b []byte) (ret []byte, size int, err error) {
 	var s int
 
 	switch t := erlType(b[0]); t {
@@ -131,34 +138,41 @@ func parseBinary(b []byte) (ret []byte, size uint, err error) {
 
 	default:
 		err = SyntaxError{"not a binary"}
+		return
 	}
 
-	if err == nil {
-		if len(b) >= s {
-			if s == 5 {
-				size = uint(s) + uint(be.Uint32(b[1:s]))
-			} else {
-				size = uint(s) + uint(be.Uint16(b[1:s]))
-			}
+	if len(b) < s {
+		err = StructuralError{
+			fmt.Sprintf("invalid binary length (%d)", len(b)),
+		}
+		return
+	}
 
-			if uint(len(b)) >= size {
-				ret = b[s:size]
-			} else {
-				err = StructuralError{
-					fmt.Sprintf("invalid binary size (%d), len=%d", size, len(b)),
-				}
-			}
-		} else {
-			err = StructuralError{
-				fmt.Sprintf("invalid binary length (%d)", len(b)),
-			}
+	usize := uint(s)
+	if s == 5 {
+		usize += uint(be.Uint32(b[1:s]))
+	} else {
+		usize += uint(be.Uint16(b[1:s]))
+	}
+
+	size = int(usize)
+	if uint(size) != usize {
+		err = fmt.Errorf("erlBinary/erlString size 0x%x overflows int type", usize)
+		return
+	}
+
+	if len(b) >= size {
+		ret = b[s:size]
+	} else {
+		err = StructuralError{
+			fmt.Sprintf("invalid binary size (%d), len=%d", size, len(b)),
 		}
 	}
 
 	return
 }
 
-func parseBool(b []byte) (ret bool, size uint, err error) {
+func parseBool(b []byte) (ret bool, size int, err error) {
 	var v Atom
 
 	v, size, err = parseAtom(b)
@@ -180,7 +194,7 @@ func parseBool(b []byte) (ret bool, size uint, err error) {
 	return
 }
 
-func parseFloat64(b []byte) (ret float64, size uint, err error) {
+func parseFloat64(b []byte) (ret float64, size int, err error) {
 	switch erlType(b[0]) {
 	case erlFloat:
 		// $cFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0
@@ -212,7 +226,7 @@ func parseFloat64(b []byte) (ret float64, size uint, err error) {
 	return
 }
 
-func parseInt64(b []byte) (ret int64, size uint, err error) {
+func parseInt64(b []byte) (ret int64, size int, err error) {
 	switch erlType(b[0]) {
 	case erlSmallInteger:
 		// $aI
@@ -253,7 +267,7 @@ func parseInt64(b []byte) (ret int64, size uint, err error) {
 	return
 }
 
-func parseUint64(b []byte) (ret uint64, size uint, err error) {
+func parseUint64(b []byte) (ret uint64, size int, err error) {
 	var result int64
 	result, size, err = parseInt64(b)
 	ret = uint64(result)
@@ -261,14 +275,14 @@ func parseUint64(b []byte) (ret uint64, size uint, err error) {
 	return
 }
 
-func parseString(b []byte) (ret string, size uint, err error) {
+func parseString(b []byte) (ret string, size int, err error) {
 	switch erlType(b[0]) {
 	case erlString:
 		// $kLL…
 		if len(b) >= 3 {
-			size = 3 + uint(be.Uint16(b[1:3]))
+			size = 3 + int(be.Uint16(b[1:3]))
 
-			if uint(len(b)) >= size {
+			if len(b) >= size {
 				ret = string(b[3:size])
 			} else {
 				err = StructuralError{
@@ -304,7 +318,7 @@ func parseString(b []byte) (ret string, size uint, err error) {
 				switch erlType(b[0]) {
 				case erlSmallInteger, erlInteger, erlSmallBig, erlLargeBig:
 					var char int64
-					var charSize uint
+					var charSize int
 					var charErr error
 					char, charSize, charErr = parseInt64(b)
 

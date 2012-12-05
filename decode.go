@@ -7,8 +7,6 @@ import (
 	r "reflect"
 )
 
-type decodeFunc func([]byte, r.Value) (uint, error)
-
 var (
 	atomType     = r.ValueOf(Atom("")).Type()
 	ErrBadFormat = errors.New("etf: bad format")
@@ -31,7 +29,7 @@ type VersionError struct {
 }
 
 // Decode unmarshals a value and stores it to a variable pointer by ptr.
-func Decode(b []byte, ptr interface{}) (size uint, err error) {
+func Decode(b []byte, ptr interface{}) (size int, err error) {
 	if len(b) < 1 {
 		return 0, ErrBadFormat
 	} else if b[0] != erlFormatVersion {
@@ -47,7 +45,7 @@ func Decode(b []byte, ptr interface{}) (size uint, err error) {
 
 // DecodeOneOf tries to unmarshal a value to one of the variables.
 // It also returns the value which was set successfully.
-func DecodeOneOf(b []byte, ptrs ...interface{}) (v interface{}, size uint, err error) {
+func DecodeOneOf(b []byte, ptrs ...interface{}) (v interface{}, size int, err error) {
 	for _, ptr := range ptrs {
 		if size, err = Decode(b, ptr); err == nil {
 			v = ptr
@@ -58,7 +56,7 @@ func DecodeOneOf(b []byte, ptrs ...interface{}) (v interface{}, size uint, err e
 	return
 }
 
-func decode(b []byte, ptr r.Value) (size uint, err error) {
+func decode(b []byte, ptr r.Value) (size int, err error) {
 	v := ptr.Elem()
 
 	switch v.Kind() {
@@ -126,7 +124,7 @@ func decode(b []byte, ptr r.Value) (size uint, err error) {
 	return
 }
 
-func decodeArray(b []byte, v r.Value) (size uint, err error) {
+func decodeArray(b []byte, v r.Value) (size int, err error) {
 	length := v.Len()
 
 	switch v.Type().Elem().Kind() {
@@ -149,7 +147,7 @@ func decodeArray(b []byte, v r.Value) (size uint, err error) {
 	return
 }
 
-func decodeList(b []byte, v r.Value) (size uint, err error) {
+func decodeList(b []byte, v r.Value) (size int, err error) {
 	switch v.Kind() {
 	case r.Slice, r.Array:
 		switch b[0] {
@@ -195,7 +193,7 @@ func decodeList(b []byte, v r.Value) (size uint, err error) {
 	return
 }
 
-func decodeSlice(b []byte, v r.Value) (size uint, err error) {
+func decodeSlice(b []byte, v r.Value) (size int, err error) {
 	switch v.Interface().(type) {
 	case []byte:
 		var result []byte
@@ -210,7 +208,7 @@ func decodeSlice(b []byte, v r.Value) (size uint, err error) {
 	return
 }
 
-func decodeSpecial(b []byte, v r.Value) (size uint, err error) {
+func decodeSpecial(b []byte, v r.Value) (size int, err error) {
 	switch v.Interface().(type) {
 	case *big.Int:
 		var result *big.Int
@@ -225,7 +223,7 @@ func decodeSpecial(b []byte, v r.Value) (size uint, err error) {
 	return
 }
 
-func decodeStruct(b []byte, v r.Value) (size uint, err error) {
+func decodeStruct(b []byte, v r.Value) (size int, err error) {
 	var arity int
 
 	switch erlType(b[0]) {
@@ -262,7 +260,7 @@ func decodeStruct(b []byte, v r.Value) (size uint, err error) {
 decode:
 	var fieldsSet int
 	for i := 0; i < v.NumField(); i++ {
-		var s uint
+		var s int
 		f := v.Field(i)
 		if f.CanSet() {
 			s, err = decode(b[size:], f.Addr())
