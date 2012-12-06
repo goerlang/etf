@@ -2,361 +2,291 @@ package parse
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	. "github.com/goerlang/etf/types"
+	"io"
 	"math"
 	"math/big"
 )
 
 var be = binary.BigEndian
 
-type StructuralError struct {
-	Msg string
-}
+var (
+	ErrFloatScan    = errors.New("failed to sscanf float")
+	ErrImproperList = errors.New("improper list")
+	ErrIntTooBig    = errors.New("integer too big")
+	ErrTypeDiffer   = errors.New("different type expected")
+)
 
-type SyntaxError struct {
-	Msg string
-}
+func Atom(r io.Reader) (ret ErlAtom, err error) {
+	etype, err := termType(r)
+	if err != nil {
+		return
+	}
 
-func (err StructuralError) Error() string {
-	return "etf: structural error: " + err.Msg
-}
-
-func (err SyntaxError) Error() string {
-	return "etf: syntax error: " + err.Msg
-}
-
-func Atom(b []byte) (ret ErlAtom, size int, err error) {
-	switch ErlType(b[0]) {
+	switch etype {
 	case ErlTypeAtom:
 		// $dLL…
-		if len(b) >= 3 {
-			size = 3 + int(be.Uint16(b[1:3]))
-
-			if len(b) >= size {
-				ret = ErlAtom(b[3:size])
-			} else {
-				err = StructuralError{"wrong atom size"}
-			}
-		} else {
-			err = StructuralError{
-				fmt.Sprintf("invalid atom length (%d)", len(b)),
-			}
+		var size uint16
+		if err = binary.Read(r, binary.BigEndian, &size); err == nil {
+			b := make([]byte, int(size))
+			_, err = io.ReadFull(r, b)
+			ret = ErlAtom(b)
 		}
 
 	case ErlTypeSmallAtom:
 		// $sL…
-		if len(b) >= 2 {
-			size = 2 + int(b[1])
-
-			if len(b) >= size {
-				ret = ErlAtom(b[2:size])
-			} else {
-				err = StructuralError{"wrong atom size"}
-			}
-		} else {
-			err = StructuralError{
-				fmt.Sprintf("invalid small atom length (%d)", len(b)),
-			}
+		var size uint8
+		if err = binary.Read(r, binary.BigEndian, &size); err == nil {
+			b := make([]byte, int(size))
+			_, err = io.ReadFull(r, b)
+			ret = ErlAtom(b)
 		}
 
 	default:
-		err = SyntaxError{"not an atom"}
+		err = ErrTypeDiffer
 	}
 
 	return
 }
 
-func BigInt(b []byte) (ret *big.Int, size int, err error) {
-	switch ErlType(b[0]) {
-	case ErlTypeSmallBig:
-		// $nAS…
-		if len(b) >= 3 && len(b)-3 >= int(b[1]) {
-			size = 3 + int(b[1])
-			b2 := reverseBytes(b[3 : 3+int(b[1])])
-			ret = new(big.Int).SetBytes(b2)
-
-			if b[2] != 0 {
-				ret = ret.Neg(ret)
-			}
-		} else {
-			err = StructuralError{
-				fmt.Sprintf("invalid small big integer length (%d)", len(b)),
-			}
-		}
-
-	case ErlTypeLargeBig:
-		// $oAAAAS…
-		if len(b) < 6 {
-			err = StructuralError{
-				fmt.Sprintf("invalid large big integer length (%d)", len(b)),
-			}
-			break
-		}
-
-		ulength := be.Uint32(b[1:5])
-		length := int(ulength)
-		if uint32(length) != ulength {
-			err = fmt.Errorf("ErlTypeLargeBig size 0x%x overflows int type", ulength)
-			break
-		}
-
-		size = 6 + length
-
-		if len(b) >= size {
-			b2 := reverseBytes(b[6 : 6+length])
-			ret = new(big.Int).SetBytes(b2)
-
-			if b[5] != 0 {
-				ret = ret.Neg(ret)
-			}
-		} else {
-			err = StructuralError{"invalid large bigInt"}
-		}
-
-	default:
-		err = SyntaxError{"not a big integer"}
-	}
-
-	return
-}
-
-func Binary(b []byte) (ret []byte, size int, err error) {
-	var s int
-
-	switch t := ErlType(b[0]); t {
-	case ErlTypeBinary:
-		// $mLLLL…
-		s = 5
-
-	case ErlTypeString:
-		// $kLL…
-		s = 3
-
-	default:
-		err = SyntaxError{"not a binary"}
-		return
-	}
-
-	if len(b) < s {
-		err = StructuralError{
-			fmt.Sprintf("invalid binary length (%d)", len(b)),
-		}
-		return
-	}
-
-	usize := uint(s)
-	if s == 5 {
-		usize += uint(be.Uint32(b[1:s]))
-	} else {
-		usize += uint(be.Uint16(b[1:s]))
-	}
-
-	size = int(usize)
-	if uint(size) != usize {
-		err = fmt.Errorf("erlBinary/erlString size 0x%x overflows int type", usize)
-		return
-	}
-
-	if len(b) >= size {
-		ret = b[s:size]
-	} else {
-		err = StructuralError{
-			fmt.Sprintf("invalid binary size (%d), len=%d", size, len(b)),
-		}
-	}
-
-	return
-}
-
-func Bool(b []byte) (ret bool, size int, err error) {
-	var v ErlAtom
-
-	v, size, err = Atom(b)
-
+func BigInt(r io.Reader) (ret *big.Int, err error) {
+	etype, err := termType(r)
 	if err == nil {
-		switch v {
-		case ErlAtom("true"):
-			ret = true
-			return
-
-		case ErlAtom("false"):
-			ret = false
-			return
-		}
-
-		err = SyntaxError{"not a boolean"}
+		ret, err = getBigInt(etype, r)
 	}
 
 	return
 }
 
-func Float64(b []byte) (ret float64, size int, err error) {
-	switch ErlType(b[0]) {
+func Binary(r io.Reader) (ret []byte, err error) {
+	etype, err := termType(r)
+	if err == nil {
+		ret, err = getBinary(etype, r)
+	}
+
+	return
+}
+
+func Bool(r io.Reader) (ret bool, err error) {
+	v, err := Atom(r)
+	if err != nil {
+		return
+	}
+
+	switch v {
+	case ErlAtom("true"):
+		ret = true
+
+	case ErlAtom("false"):
+		ret = false
+
+	default:
+		err = ErrTypeDiffer
+	}
+
+	return
+}
+
+func Float64(r io.Reader) (ret float64, err error) {
+	etype, err := termType(r)
+	if err != nil {
+		return
+	}
+
+	switch etype {
 	case ErlTypeFloat:
 		// $cFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0
-		if len(b) >= 32 {
+		b := make([]byte, 31)
+		if _, err = io.ReadFull(r, b); err == nil {
 			var r int
-			r, err = fmt.Sscanf(string(b[1:32]), "%f", &ret)
-			size += 32
-
-			if r != 1 || err != nil {
-				err = StructuralError{"failed to scan float"}
+			if r, err = fmt.Sscanf(string(b), "%f", &ret); r != 1 && err == nil {
+				err = ErrFloatScan
 			}
-		} else {
-			err = StructuralError{fmt.Sprintf("invalid float length (%d)", len(b))}
 		}
 
 	case ErlTypeNewFloat:
 		// $FFFFFFFFF
-		if len(b) >= 9 {
-			ret = math.Float64frombits(be.Uint64(b[1:9]))
-			size += 9
-		} else {
-			err = StructuralError{fmt.Sprintf("invalid float length (%d)", len(b))}
+		b := make([]byte, 8)
+		if _, err = io.ReadFull(r, b); err == nil {
+			ret = math.Float64frombits(be.Uint64(b))
 		}
 
 	default:
-		err = SyntaxError{"not a float"}
+		err = ErrTypeDiffer
 	}
 
 	return
 }
 
-func Int64(b []byte) (ret int64, size int, err error) {
-	switch ErlType(b[0]) {
-	case ErlTypeSmallInteger:
-		// $aI
-		if len(b) >= 2 {
-			return int64(b[1]), 2, nil
-		} else {
-			err = StructuralError{
-				fmt.Sprintf("invalid small integer length (%d)", len(b)),
-			}
-		}
-
-	case ErlTypeInteger:
-		// $bIIII
-		if len(b) >= 5 {
-			return int64(int32(be.Uint32(b[1:5]))), 5, nil
-		} else {
-			err = StructuralError{
-				fmt.Sprintf("invalid integer length (%d)", len(b)),
-			}
-		}
-
-	case ErlTypeSmallBig, ErlTypeLargeBig:
-		var v *big.Int
-		v, size, err = BigInt(b)
-
-		if err == nil {
-			ret = v.Int64()
-
-			if v.Cmp(big.NewInt(ret)) != 0 {
-				err = StructuralError{"integer too large"}
-			}
-		}
-
-	default:
-		err = SyntaxError{"not an integer"}
+func Int64(r io.Reader) (ret int64, err error) {
+	etype, err := termType(r)
+	if err == nil {
+		ret, err = getInt64(etype, r)
 	}
 
 	return
 }
 
-func UInt64(b []byte) (ret uint64, size int, err error) {
-	var result int64
-	result, size, err = Int64(b)
-	ret = uint64(result)
-
+func UInt64(r io.Reader) (ret uint64, err error) {
+	iret, err := Int64(r)
+	ret = uint64(iret)
 	return
 }
 
-func String(b []byte) (ret string, size int, err error) {
-	switch ErlType(b[0]) {
-	case ErlTypeString:
-		// $kLL…
-		if len(b) >= 3 {
-			size = 3 + int(be.Uint16(b[1:3]))
+func String(r io.Reader) (ret string, err error) {
+	etype, err := termType(r)
+	if err != nil {
+		return
+	}
 
-			if len(b) >= size {
-				ret = string(b[3:size])
-			} else {
-				err = StructuralError{
-					fmt.Sprintf("invalid string size (%d), len=%d", size, len(b)),
-				}
-			}
-		} else {
-			err = StructuralError{
-				fmt.Sprintf("invalid string length (%d)", len(b)),
-			}
-		}
-
-	case ErlTypeBinary:
-		var r []byte
-		r, size, err = Binary(b)
-		ret = string(r)
+	switch etype {
+	case ErlTypeString, ErlTypeBinary:
+		var b []byte
+		b, err = getBinary(etype, r)
+		ret = string(b)
 
 	case ErlTypeList:
 		// $lLLLL…$j
-		if len(b) > 5 {
-			strLen := uint(be.Uint32(b[1:5]))
-			size = 5
-			b = b[size:]
+		var size uint32
+		if err = binary.Read(r, binary.BigEndian, &size); err != nil {
+			return
+		}
 
-			err = StructuralError{"not a string"}
+		b := make([]byte, 1)
 
-			for i := uint(0); i < strLen; i++ {
-				if len(b) <= 0 {
-					err = StructuralError{"string ends abruptly"}
-					return
-				}
-
-				switch ErlType(b[0]) {
-				case ErlTypeSmallInteger, ErlTypeInteger, ErlTypeSmallBig, ErlTypeLargeBig:
-					var char int64
-					var charSize int
-					var charErr error
-					char, charSize, charErr = Int64(b)
-
-					if charErr == nil {
-						ret += string(char)
-						size += charSize
-						b = b[charSize:]
-					} else {
-						return
-					}
-
-				default:
-					return
-				}
-			}
-
-			if len(b) < 1 || ErlType(b[0]) != ErlTypeNil {
-				err = StructuralError{"not a string (got improper list)"}
+		for i := uint32(0); i < size; i++ {
+			if _, err = io.ReadFull(r, b); err != nil {
 				return
 			}
 
-			size++
-			err = nil
-		} else {
-			err = StructuralError{
-				fmt.Sprintf("invalid list length (%d)", len(b)),
+			etype = ErlType(b[0])
+			switch etype {
+			case ErlTypeSmallInteger, ErlTypeInteger, ErlTypeSmallBig, ErlTypeLargeBig:
+				var char int64
+				if char, err = getInt64(etype, r); err != nil {
+					return
+				}
+
+				ret += string(char)
+
+			default:
+				err = ErrTypeDiffer
+				return
 			}
+		}
+
+		if _, err = io.ReadFull(r, b); err == nil && ErlType(b[0]) != ErlTypeNil {
+			err = ErrImproperList
 		}
 
 	case ErlTypeNil:
 		// $j
-		size++
 
 	default:
-		err = SyntaxError{"not a string"}
+		err = ErrTypeDiffer
 	}
 
 	return
 }
 
-func reverseBytes(b []byte) []byte {
+func getBigInt(etype ErlType, r io.Reader) (ret *big.Int, err error) {
+	var size uint32
+	var sign byte
+
+	switch etype {
+	case ErlTypeSmallBig:
+		// $nAS…
+		b := make([]byte, 2)
+		if _, err = io.ReadFull(r, b); err == nil {
+			size = uint32(b[0])
+			sign = b[1]
+		}
+
+	case ErlTypeLargeBig:
+		// $oAAAAS…
+		b := make([]byte, 5)
+		if _, err = io.ReadFull(r, b); err == nil {
+			size = binary.BigEndian.Uint32(b[:4])
+			sign = b[4]
+		}
+
+	default:
+		err = ErrTypeDiffer
+	}
+
+	if err == nil {
+		b := make([]byte, int(size))
+		if _, err = io.ReadFull(r, b); err == nil {
+			ret = new(big.Int).SetBytes(reverse(b))
+
+			if sign != 0 {
+				ret = ret.Neg(ret)
+			}
+		}
+	}
+
+	return
+}
+
+func getBinary(etype ErlType, r io.Reader) (ret []byte, err error) {
+	switch etype {
+	case ErlTypeBinary:
+		// $mLLLL…
+		var size uint32
+		if err = binary.Read(r, binary.BigEndian, &size); err == nil {
+			ret = make([]byte, size)
+			_, err = io.ReadFull(r, ret)
+		}
+
+	case ErlTypeString:
+		// $kLL…
+		var size uint16
+		if err = binary.Read(r, binary.BigEndian, &size); err == nil {
+			ret = make([]byte, size)
+			_, err = io.ReadFull(r, ret)
+		}
+
+	default:
+		err = ErrTypeDiffer
+	}
+
+	return
+}
+
+func getInt64(etype ErlType, r io.Reader) (ret int64, err error) {
+	switch etype {
+	case ErlTypeSmallInteger:
+		// $aI
+		var x uint8
+		err = binary.Read(r, binary.BigEndian, &x)
+		ret = int64(x)
+
+	case ErlTypeInteger:
+		// $bIIII
+		var x int32
+		err = binary.Read(r, binary.BigEndian, &x)
+		ret = int64(x)
+
+	case ErlTypeSmallBig, ErlTypeLargeBig:
+		var v *big.Int
+		if v, err = getBigInt(etype, r); err == nil {
+			ret = v.Int64()
+
+			if v.Cmp(big.NewInt(ret)) != 0 {
+				err = ErrIntTooBig
+			}
+		}
+
+	default:
+		err = ErrTypeDiffer
+	}
+
+	return
+}
+
+func reverse(b []byte) []byte {
 	size := len(b)
 	r := make([]byte, size)
 
@@ -365,4 +295,11 @@ func reverseBytes(b []byte) []byte {
 	}
 
 	return r
+}
+
+func termType(r io.Reader) (ErlType, error) {
+	var err error
+	b := make([]byte, 1)
+	_, err = io.ReadFull(r, b)
+	return ErlType(b[0]), err
 }

@@ -7,65 +7,65 @@ import (
 	"testing"
 )
 
-func Test_decodeArray(t *testing.T) {
+func TestDecodeArray(t *testing.T) {
 	var v [3]byte
 
-	in := []byte{131, 107, 0, 3, 1, 2, 3}
-	if size, err := Decode(in, &v); err != nil {
+	in := bytes.NewBuffer([]byte{131, 107, 0, 3, 1, 2, 3})
+	if err := Decode(in, &v); err != nil {
 		t.Fatal(err)
-	} else if size != len(in) {
-		t.Errorf("expected size %d, got %d", len(in), size)
+	} else if l := in.Len(); l != 0 {
+		t.Errorf("buffer len %d", l)
 	} else if exp := []byte{1, 2, 3}; bytes.Compare(v[:], exp) != 0 {
 		t.Errorf("expected %v, got %v", exp, v)
 	}
 }
 
-func Test_decodeBigInt(t *testing.T) {
+func TestDecodeBigInt(t *testing.T) {
 	var v *big.Int
 
-	in := []byte{131, 110, 15, 0, 0, 0, 0, 0, 16, 159, 75, 179, 21, 7, 201, 123, 206, 151, 192}
+	in := bytes.NewBuffer([]byte{
+		131, 110, 15, 0, 0, 0, 0, 0, 16, 159,
+		75, 179, 21, 7, 201, 123, 206, 151, 192,
+	})
 	exp, _ := new(big.Int).SetString("1000000000000000000000000000000000000", 10)
-	if size, err := Decode(in, &v); err != nil {
+	if err := Decode(in, &v); err != nil {
 		t.Fatal(err)
-	} else if size != len(in) {
-		t.Errorf("expected size %d, got %d", len(in), size)
+	} else if l := in.Len(); l != 0 {
+		t.Errorf("buffer len %d", l)
 	} else if exp.Cmp(v) != 0 {
 		t.Errorf("expected %v, got %v", exp, v)
 	}
 }
 
-func Test_decodeBinary(t *testing.T) {
+func TestDecodeBinary(t *testing.T) {
 	var data []byte
 
-	in := []byte{131, 109, 0, 0, 0, 3, 1, 2, 3}
-	size, err := Decode(in, &data)
+	in := bytes.NewBuffer([]byte{131, 109, 0, 0, 0, 3, 1, 2, 3})
+	err := Decode(in, &data)
 	if err != nil {
 		t.Fatal(err)
-	} else if size != len(in) {
-		t.Errorf("expected size %d, got %d", len(in), size)
+	} else if l := in.Len(); l != 0 {
+		t.Errorf("buffer len %d", l)
 	} else if exp := []byte{1, 2, 3}; bytes.Compare(data, exp) != 0 {
 		t.Errorf("expected %v, got %v", exp, data)
 	}
 }
 
-func Test_decodeString(t *testing.T) {
+func TestDecodeString(t *testing.T) {
 	var s string
 
-	in := []byte{131, 107, 0, 3, 49, 50, 51}
-	size, err := Decode(in, &s)
+	in := bytes.NewBuffer([]byte{131, 107, 0, 3, 49, 50, 51})
+	err := Decode(in, &s)
 	if err != nil {
 		t.Error(err)
-	}
-
-	exp := "123"
-	if size != len(in) {
-		t.Errorf("expected size %d, got %d", len(in), size)
-	} else if s != exp {
+	} else if l := in.Len(); l != 0 {
+		t.Errorf("buffer len %d", l)
+	} else if exp := "123"; s != exp {
 		t.Errorf("expected %v, got %v", exp, s)
 	}
 }
 
-func Test_decodeStruct(t *testing.T) {
+func TestDecodeStruct(t *testing.T) {
 	type testStruct struct {
 		types.ErlAtom
 		X uint8
@@ -73,20 +73,20 @@ func Test_decodeStruct(t *testing.T) {
 	}
 	var ts testStruct
 
-	in := []byte{
+	in := bytes.NewBuffer([]byte{
 		131, 104, 3, 100, 0, 4, 98, 108, 97, 104, 97, 4, 108, 0, 0, 0, 4, 98,
 		0, 0, 4, 68, 98, 0, 0, 4, 75, 98, 0, 0, 4, 50, 98, 0, 0, 4, 48, 106,
-	}
-	if size, err := Decode(in, &ts); err != nil {
+	})
+	if err := Decode(in, &ts); err != nil {
 		t.Fatal(err)
-	} else if size != len(in) {
-		t.Errorf("expected size %d, got %d", len(in), size)
+	} else if l := in.Len(); l != 0 {
+		t.Errorf("buffer len %d", l)
 	} else if exp := (testStruct{types.ErlAtom("blah"), 4, "фыва"}); ts != exp {
 		t.Errorf("expected %v, got %v", exp, ts)
 	}
 }
 
-func Test_decodeStruct2(t *testing.T) {
+func TestDecodeStruct2(t *testing.T) {
 	type testStruct2 struct {
 		j string
 		F float32
@@ -96,21 +96,22 @@ func Test_decodeStruct2(t *testing.T) {
 	}
 	var ts testStruct2
 
-	in := []byte{
-		131, 104, 3, 99, 50, 46, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57,
-		57, 57, 56, 56, 56, 57, 56, 101, 45, 48, 49, 0, 0, 0, 0, 0, 97, 4, 108, 0, 0,
-		0, 4, 98, 0, 0, 4, 68, 98, 0, 0, 4, 75, 98, 0, 0, 4, 50, 98, 0, 0, 4, 48, 106,
-	}
-	if size, err := Decode(in, &ts); err != nil {
+	in := bytes.NewBuffer([]byte{
+		131, 104, 3, 99, 50, 46, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57, 57,
+		57, 57, 57, 56, 56, 56, 57, 56, 101, 45, 48, 49, 0, 0, 0, 0, 0, 97, 4, 108,
+		0, 0, 0, 4, 98, 0, 0, 4, 68, 98, 0, 0, 4, 75, 98, 0, 0, 4, 50, 98, 0, 0, 4,
+		48, 106,
+	})
+	if err := Decode(in, &ts); err != nil {
 		t.Fatal(err)
-	} else if size != len(in) {
-		t.Errorf("expected size %d, got %d", len(in), size)
+	} else if l := in.Len(); l != 0 {
+		t.Errorf("buffer len %d", l)
 	} else if exp := (testStruct2{"", 0.3, 4, [2]byte{0, 0}, "фыва"}); ts != exp {
 		t.Errorf("expected %v, got %v", exp, ts)
 	}
 }
 
-func Test_decodeStruct3(t *testing.T) {
+func TestDecodeStruct3(t *testing.T) {
 	type testStruct struct {
 		types.ErlAtom
 		X uint8
@@ -127,15 +128,35 @@ func Test_decodeStruct3(t *testing.T) {
 	nilBig := (*big.Int)(nil)
 	nilArr := [2]byte{0, 0}
 
-	in := []byte{
-		131, 104, 2, 104, 3, 100, 0, 4, 98, 108, 97, 104, 97, 4, 108, 0, 0, 0, 4, 98,
-		0, 0, 4, 68, 98, 0, 0, 4, 75, 98, 0, 0, 4, 50, 98, 0, 0, 4, 48, 106, 98, 0, 0, 2, 154,
+	in := bytes.NewBuffer([]byte{
+		131,
+		104, 2,
+		104, 3,
+		100, 0, 4, 98, 108, 97,
+		104, 97, 4,
+		108, 0, 0, 0, 4,
+		98, 0, 0, 4, 68,
+		98, 0, 0, 4, 75,
+		98, 0, 0, 4, 50,
+		98, 0, 0, 4, 48,
+		106,
+		98, 0, 0, 2, 154,
+	})
+	exp := testStruct3{
+		testStruct{
+			types.ErlAtom("blah"),
+			4,
+			nilBig,
+			"фыва",
+		},
+		nilArr,
+		666,
 	}
-	if size, err := Decode(in, &ts); err != nil {
+	if err := Decode(in, &ts); err != nil {
 		t.Fatal(err)
-	} else if size != len(in) {
-		t.Errorf("expected size %d, got %d", len(in), size)
-	} else if exp := (testStruct3{testStruct{types.ErlAtom("blah"), 4, nilBig, "фыва"}, nilArr, 666}); ts != exp {
+	} else if l := in.Len(); l != 0 {
+		t.Errorf("buffer len %d", l)
+	} else if ts != exp {
 		t.Errorf("expected %v, got %v", exp, ts)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	. "github.com/goerlang/etf/types"
+	"io"
 	"math"
 	"math/big"
 	"math/rand"
@@ -11,41 +12,41 @@ import (
 	"time"
 )
 
-func Benchmark_Atom(b *testing.B) {
+func BenchmarkAtom(b *testing.B) {
 	b.StopTimer()
 
 	rand.Seed(time.Now().UnixNano())
 	max := 64
 	length := 64
-	atoms := make([][]byte, max)
+	atoms := make([]*bytes.Buffer, max)
 
 	for i := 0; i < max; i++ {
 		w := new(bytes.Buffer)
 		w.Write([]byte{ErlTypeSmallAtom, byte(length)})
 		w.Write(bytes.Repeat([]byte{byte('A' + i)}, length))
-		atoms[i] = w.Bytes()
+		atoms[i] = w
 	}
 
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
 		in := atoms[i%max]
-		_, _, err := Atom(in)
+		_, err := Atom(in)
 
-		if err != nil {
-			b.Fatal("failed to parse atom %#v", in)
+		if err != io.EOF && err != nil {
+			b.Fatal(err)
 		}
 	}
 }
 
-func Benchmark_BigInt(b *testing.B) {
+func BenchmarkBigInt(b *testing.B) {
 	b.StopTimer()
 
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	uint64Max := big.NewInt(math.MaxInt64)
 	top := new(big.Int).Mul(uint64Max, uint64Max)
 	max := 512
-	bigints := make([][]byte, max)
+	bigints := make([]*bytes.Buffer, max)
 
 	for i := 0; i < max; i++ {
 		w := new(bytes.Buffer)
@@ -56,58 +57,88 @@ func Benchmark_BigInt(b *testing.B) {
 		if v.Sign() < 0 {
 			sign = 1
 		}
-		bytes := reverseBytes(new(big.Int).Abs(a).Bytes())
+		bytes := reverse(new(big.Int).Abs(a).Bytes())
 		w.Write([]byte{ErlTypeSmallBig, byte(len(bytes)), byte(sign)})
 		w.Write(bytes)
-		bigints[i] = w.Bytes()
+		bigints[i] = w
 	}
 
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
 		in := bigints[i%max]
-		_, _, err := BigInt(in)
+		_, err := BigInt(in)
 
-		if err != nil {
-			b.Fatal("failed to parse big int %#v", in)
+		if err != io.EOF && err != nil {
+			b.Fatal(err)
 		}
 	}
 }
 
-func Benchmark_Float64(b *testing.B) {
+func BenchmarkBinary(b *testing.B) {
+	b.StopTimer()
+
+	rand.Seed(time.Now().UnixNano())
+	max := 64
+	length := 64
+	binaries := make([]*bytes.Buffer, max)
+
+	for i := 0; i < max; i++ {
+		w := new(bytes.Buffer)
+		s := bytes.Repeat([]byte{'a'}, length)
+		b := bytes.Map(func(rune) rune { return rune(byte(rand.Int())) }, s)
+		w.Write([]byte{ErlTypeBinary})
+		binary.Write(w, binary.BigEndian, uint32(len(b)))
+		w.Write(b)
+		binaries[i] = w
+	}
+
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		in := binaries[i%max]
+		_, err := Binary(in)
+
+		if err != io.EOF && err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkFloat64(b *testing.B) {
 	b.StopTimer()
 
 	rand.Seed(time.Now().UnixNano())
 	max := 512
-	floats := make([][]byte, max)
+	floats := make([]*bytes.Buffer, max)
 
 	for i := 0; i < max; i++ {
 		w := new(bytes.Buffer)
 		v := rand.ExpFloat64() - rand.ExpFloat64()
 		w.Write([]byte{ErlTypeNewFloat})
 		binary.Write(w, binary.BigEndian, math.Float64bits(v))
-		floats[i] = w.Bytes()
+		floats[i] = w
 	}
 
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
 		in := floats[i%max]
-		_, _, err := Float64(in)
+		_, err := Float64(in)
 
-		if err != nil {
-			b.Fatal("failed to parse float %#v", in)
+		if err != io.EOF && err != nil {
+			b.Fatal(err)
 		}
 	}
 }
 
-func Benchmark_String(b *testing.B) {
+func BenchmarkString(b *testing.B) {
 	b.StopTimer()
 
 	rand.Seed(time.Now().UnixNano())
 	max := 64
 	length := 64
-	strings := make([][]byte, max)
+	strings := make([]*bytes.Buffer, max)
 
 	for i := 0; i < max; i++ {
 		w := new(bytes.Buffer)
@@ -116,17 +147,17 @@ func Benchmark_String(b *testing.B) {
 		w.Write([]byte{ErlTypeString})
 		binary.Write(w, binary.BigEndian, uint16(len(b)))
 		w.Write(b)
-		strings[i] = w.Bytes()
+		strings[i] = w
 	}
 
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
 		in := strings[i%max]
-		_, _, err := String(in)
+		_, err := String(in)
 
-		if err != nil {
-			b.Fatal("failed to parse string %#v", in)
+		if err != io.EOF && err != nil {
+			b.Fatal(err)
 		}
 	}
 }
