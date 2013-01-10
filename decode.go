@@ -8,7 +8,7 @@ import (
 	t "github.com/goerlang/etf/types"
 	"io"
 	"math/big"
-	reflect "reflect"
+	"reflect"
 )
 
 var (
