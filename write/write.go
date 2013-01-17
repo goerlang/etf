@@ -84,11 +84,9 @@ func Binary(w io.Writer, bytes []byte) (err error) {
 }
 
 func Bool(w io.Writer, b bool) (err error) {
-	switch b {
-	case true:
+	if b {
 		err = Atom(w, ErlAtom("true"))
-
-	case false:
+	} else {
 		err = Atom(w, ErlAtom("false"))
 	}
 
