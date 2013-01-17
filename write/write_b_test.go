@@ -84,6 +84,27 @@ func BenchmarkBinary(b *testing.B) {
 	}
 }
 
+func BenchmarkBool(b *testing.B) {
+	b.StopTimer()
+
+	rand.Seed(time.Now().UnixNano())
+	max := 64
+	bools := make([]bool, max)
+
+	for i := 0; i < max; i++ {
+		bools[i] = (rand.Intn(2) == 1)
+	}
+
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		in := bools[i%max]
+		if err := Bool(Discard, in); err != nil {
+			b.Fatal(in, err)
+		}
+	}
+}
+
 func BenchmarkFloat64(b *testing.B) {
 	b.StopTimer()
 
