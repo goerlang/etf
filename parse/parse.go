@@ -13,10 +13,10 @@ import (
 var be = binary.BigEndian
 
 var (
-	ErrFloatScan    = errors.New("failed to sscanf float")
-	ErrImproperList = errors.New("improper list")
-	ErrIntTooBig    = errors.New("integer too big")
-	ErrTypeDiffer   = errors.New("different type expected")
+	ErrFloatScan    = errors.New("parse: failed to sscanf float")
+	ErrImproperList = errors.New("parse: improper list")
+	ErrIntTooBig    = errors.New("parse: integer too big")
+	ErrTypeDiffer   = errors.New("parse: different type expected")
 )
 
 func Atom(r io.Reader) (ret ErlAtom, err error) {
