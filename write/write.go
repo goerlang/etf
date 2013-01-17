@@ -42,23 +42,21 @@ func BigInt(w io.Writer, x *big.Int) (err error) {
 	case size <= 0xff:
 		// $nAS…
 		_, err = w.Write([]byte{ErlTypeSmallBig, byte(size), byte(sign)})
-		if err == nil {
-			_, err = w.Write(bytes)
-		}
 
 	case int(uint32(size)) == size:
 		// $oAAAAS…
-		data := []byte{
+		_, err = w.Write([]byte{
 			ErlTypeLargeBig,
 			byte(size >> 24), byte(size >> 16), byte(size >> 8), byte(size),
 			byte(sign),
-		}
-		if _, err = w.Write(data); err == nil {
-			_, err = w.Write(bytes)
-		}
+		})
 
 	default:
 		err = fmt.Errorf("bad big int size (%d)", size)
+	}
+
+	if err == nil {
+		_, err = w.Write(bytes)
 	}
 
 	return
@@ -142,11 +140,11 @@ func String(w io.Writer, s string) (err error) {
 
 func reverse(b []byte) []byte {
 	size := len(b)
-	r := make([]byte, size)
+	hsize := size >> 1
 
-	for i := 0; i < size; i++ {
-		r[i] = b[size-i-1]
+	for i := 0; i < hsize; i++ {
+		b[i], b[size-i-1] = b[size-i-1], b[i]
 	}
 
-	return r
+	return b
 }
