@@ -16,7 +16,7 @@ var (
 	ErrBadFormat = errors.New("etf: bad format")
 )
 
-// Decode unmarshals a value and stores it to a variable pointer by ptr.
+// Decode unmarshals a value and stores it to a variable pointed by ptr.
 func Decode(r io.Reader, ptr interface{}) (err error) {
 	b := make([]byte, 1)
 	_, err = io.ReadFull(r, b)
