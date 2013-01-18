@@ -22,8 +22,10 @@ func BenchmarkAtom(b *testing.B) {
 
 	for i := 0; i < max; i++ {
 		w := new(bytes.Buffer)
+		s := bytes.Repeat([]byte{'a'}, length)
+		b := bytes.Map(randRune, s)
 		w.Write([]byte{ErlTypeSmallAtom, byte(length)})
-		w.Write(bytes.Repeat([]byte{byte('A' + i)}, length))
+		w.Write(b)
 		atoms[i] = w
 	}
 
@@ -143,7 +145,7 @@ func BenchmarkString(b *testing.B) {
 	for i := 0; i < max; i++ {
 		w := new(bytes.Buffer)
 		s := bytes.Repeat([]byte{'a'}, length)
-		b := bytes.Map(func(rune) rune { return rune(byte(rand.Int())) }, s)
+		b := bytes.Map(randRune, s)
 		w.Write([]byte{ErlTypeString})
 		binary.Write(w, binary.BigEndian, uint16(len(b)))
 		w.Write(b)
@@ -160,4 +162,8 @@ func BenchmarkString(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
+}
+
+func randRune(_ rune) rune {
+	return rune('0' + byte(rand.Intn('z'-'0'+1)))
 }

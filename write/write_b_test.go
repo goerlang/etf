@@ -157,10 +157,7 @@ func BenchmarkString(b *testing.B) {
 
 	for i := 0; i < max; i++ {
 		s := bytes.Repeat([]byte{'a'}, length)
-		strings[i] = string(bytes.Map(
-			func(rune) rune { return rune(byte(rand.Int())) },
-			s,
-		))
+		strings[i] = string(bytes.Map(randRune, s))
 	}
 
 	b.StartTimer()
@@ -171,4 +168,8 @@ func BenchmarkString(b *testing.B) {
 			b.Fatal(in, err)
 		}
 	}
+}
+
+func randRune(_ rune) rune {
+	return rune('0' + byte(rand.Intn('z'-'0'+1)))
 }
