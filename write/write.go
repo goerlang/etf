@@ -1,3 +1,4 @@
+// Package write implements writing basic Go types as external Erlang terms.
 package write
 
 import (

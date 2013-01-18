@@ -1,3 +1,5 @@
+// Package etf provides an API to decode Erlang terms into Go
+// data structures and vice versa.
 package etf
 
 import (

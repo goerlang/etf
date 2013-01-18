@@ -1,3 +1,4 @@
+// Package types defines Erlang-specific types in Go.
 package types
 
 import (

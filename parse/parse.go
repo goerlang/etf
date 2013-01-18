@@ -1,3 +1,4 @@
+// Package parse implements reading of basic Erlang external terms.
 package parse
 
 import (
