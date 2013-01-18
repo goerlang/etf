@@ -144,6 +144,33 @@ func Int64(r io.Reader) (ret int64, err error) {
 	return
 }
 
+func Pid(r io.Reader) (ret ErlPid, err error) {
+	etype, err := termType(r)
+	if err != nil {
+		return
+	}
+
+	switch etype {
+	case ErlTypePid:
+		var a ErlAtom
+		var b = make([]byte, 9)
+		if a, err = Atom(r); err != nil {
+			return
+		} else if _, err = io.ReadFull(r, b); err != nil {
+			return
+		}
+		ret.Node = Node(a)
+		ret.Id = binary.BigEndian.Uint32(b[:4])
+		ret.Serial = binary.BigEndian.Uint32(b[4:8])
+		ret.Creation = b[8]
+
+	default:
+		err = &ErrTypeDiffer{etype, []byte{ErlTypePid}}
+	}
+
+	return
+}
+
 func UInt64(r io.Reader) (ret uint64, err error) {
 	iret, err := Int64(r)
 	ret = uint64(iret)

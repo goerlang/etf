@@ -278,6 +278,40 @@ func TestInt64(t *testing.T) {
 	}
 }
 
+func TestPid(t *testing.T) {
+	// lol@localhost
+	in := bytes.NewBuffer([]byte{
+		103, 100, 0, 13, 108, 111,
+		108, 64, 108, 111, 99, 97,
+		108, 104, 111, 115, 116, 0,
+		0, 0, 38, 0, 0, 0, 0, 3,
+	})
+	exp := ErlPid{Node("lol@localhost"), 38, 0, 3}
+	if v, err := Pid(in); err != nil {
+		t.Error(err)
+	} else if l := in.Len(); l != 0 {
+		t.Errorf("buffer len %d", l)
+	} else if v != exp {
+		t.Errorf("expected %v, got %v", exp, v)
+	}
+
+	// nonode@nohost
+	in = bytes.NewBuffer([]byte{
+		103, 100, 0, 13, 110, 111,
+		110, 111, 100, 101, 64, 110,
+		111, 104, 111, 115, 116, 0,
+		0, 0, 32, 0, 0, 0, 0, 0,
+	})
+	exp = ErlPid{Node("nonode@nohost"), 32, 0, 0}
+	if v, err := Pid(in); err != nil {
+		t.Error(err)
+	} else if l := in.Len(); l != 0 {
+		t.Errorf("buffer len %d", l)
+	} else if v != exp {
+		t.Errorf("expected %v, got %v", exp, v)
+	}
+}
+
 func TestString(t *testing.T) {
 	// "" (nil)
 	in := bytes.NewBuffer([]byte{106})

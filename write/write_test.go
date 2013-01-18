@@ -114,6 +114,24 @@ func TestInt64(t *testing.T) {
 	test(math.MinInt32 - 1)
 }
 
+func TestPid(t *testing.T) {
+	test := func(in ErlPid) {
+		w := new(bytes.Buffer)
+		if err := Pid(w, in); err != nil {
+			t.Error(in, err)
+		} else if v, err := parse.Pid(w); err != nil {
+			t.Error(in, err)
+		} else if l := w.Len(); l != 0 {
+			t.Errorf("%v: buffer len %d", in, l)
+		} else if v != in {
+			t.Errorf("expected %v, got %v", in, v)
+		}
+	}
+
+	test(ErlPid{Node("omg@lol"), 38, 0, 3})
+	test(ErlPid{Node("self@localhost"), 32, 1, 9})
+}
+
 func TestString(t *testing.T) {
 	test := func(in string, shouldFail bool) {
 		w := new(bytes.Buffer)

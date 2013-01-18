@@ -12,7 +12,7 @@ type ErlAtom string
 
 type Node ErlAtom
 
-type Pid struct {
+type ErlPid struct {
 	Node     Node
 	Id       uint32
 	Serial   uint32
@@ -39,7 +39,7 @@ type Function struct {
 	Module    ErlAtom
 	OldIndex  uint32
 	OldUnique uint32
-	Pid       Pid
+	Pid       ErlPid
 	FreeVars  []Term
 }
 

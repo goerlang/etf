@@ -122,6 +122,25 @@ func Int64(w io.Writer, x int64) (err error) {
 	return
 }
 
+func Pid(w io.Writer, p ErlPid) (err error) {
+	if _, err = w.Write([]byte{ErlTypePid}); err != nil {
+		return
+	} else if err = Atom(w, ErlAtom(p.Node)); err != nil {
+		return
+	}
+
+	_, err = w.Write([]byte{
+		0, 0, byte(p.Id >> 8), byte(p.Id),
+		byte(p.Serial >> 24),
+		byte(p.Serial >> 16),
+		byte(p.Serial >> 8),
+		byte(p.Serial),
+		p.Creation,
+	})
+
+	return
+}
+
 func String(w io.Writer, s string) (err error) {
 	switch size := len(s); {
 	case size <= 0xffff:

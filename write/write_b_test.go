@@ -147,6 +147,36 @@ func BenchmarkInt64(b *testing.B) {
 	}
 }
 
+func BenchmarkPid(b *testing.B) {
+	b.StopTimer()
+
+	rand.Seed(time.Now().UnixNano())
+	max := 64
+	length := 16
+	pids := make([]ErlPid, max)
+
+	for i := 0; i < max; i++ {
+		s := bytes.Repeat([]byte{'a'}, length)
+		b := bytes.Map(randRune, s)
+		b[6] = '@'
+		pids[i] = ErlPid{
+			Node(b),
+			uint32(rand.Intn(65536)),
+			uint32(rand.Intn(256)),
+			byte(rand.Intn(16)),
+		}
+	}
+
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		in := pids[i%max]
+		if err := Pid(Discard, in); err != nil {
+			b.Fatal(in, err)
+		}
+	}
+}
+
 func BenchmarkString(b *testing.B) {
 	b.StopTimer()
 

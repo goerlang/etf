@@ -134,6 +134,39 @@ func BenchmarkFloat64(b *testing.B) {
 	}
 }
 
+func BenchmarkPid(b *testing.B) {
+	b.StopTimer()
+
+	rand.Seed(time.Now().UnixNano())
+	max := 64
+	length := 16
+	pids := make([]*bytes.Buffer, max)
+
+	for i := 0; i < max; i++ {
+		w := new(bytes.Buffer)
+		s := bytes.Repeat([]byte{'a'}, length)
+		b := bytes.Map(randRune, s)
+		b[6] = '@'
+		w.Write([]byte{ErlTypePid, ErlTypeSmallAtom, byte(length)})
+		w.Write(b)
+		w.Write([]byte{0, 0, 0, uint8(rand.Int())})
+		w.Write([]byte{0, 0, 0, uint8(rand.Int())})
+		w.Write([]byte{uint8(rand.Int())})
+		pids[i] = w
+	}
+
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		in := pids[i%max]
+		_, err := Pid(in)
+
+		if err != io.EOF && err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func BenchmarkString(b *testing.B) {
 	b.StopTimer()
 
