@@ -10,14 +10,29 @@ import (
 	"math/big"
 )
 
+type ErrTypeDiffer struct {
+	Got byte
+	Exp []byte
+}
+
 var be = binary.BigEndian
 
 var (
 	ErrFloatScan    = errors.New("parse: failed to sscanf float")
 	ErrImproperList = errors.New("parse: improper list")
 	ErrIntTooBig    = errors.New("parse: integer too big")
-	ErrTypeDiffer   = errors.New("parse: different type expected")
+	ErrBadBoolean   = errors.New("parse: invalid boolean")
 )
+
+func (e *ErrTypeDiffer) Error() string {
+	exp := make([]string, len(e.Exp))
+	for i, v := range e.Exp {
+		exp[i] = fmt.Sprintf("%s(%d)", TypeName(v), v)
+	}
+	return fmt.Sprintf("parse: type expected one of %s, got %s(%d)",
+		exp, TypeName(e.Got), e.Got,
+	)
+}
 
 func Atom(r io.Reader) (ret ErlAtom, err error) {
 	etype, err := termType(r)
@@ -45,7 +60,7 @@ func Atom(r io.Reader) (ret ErlAtom, err error) {
 		}
 
 	default:
-		err = ErrTypeDiffer
+		err = &ErrTypeDiffer{etype, []byte{ErlTypeAtom, ErlTypeSmallAtom}}
 	}
 
 	return
@@ -83,7 +98,7 @@ func Bool(r io.Reader) (ret bool, err error) {
 		ret = false
 
 	default:
-		err = ErrTypeDiffer
+		err = ErrBadBoolean
 	}
 
 	return
@@ -114,7 +129,7 @@ func Float64(r io.Reader) (ret float64, err error) {
 		}
 
 	default:
-		err = ErrTypeDiffer
+		err = &ErrTypeDiffer{etype, []byte{ErlTypeFloat, ErlTypeNewFloat}}
 	}
 
 	return
@@ -161,7 +176,7 @@ func String(r io.Reader) (ret string, err error) {
 				return
 			}
 
-			etype = ErlType(b[0])
+			etype = b[0]
 			switch etype {
 			case ErlTypeSmallInteger, ErlTypeInteger, ErlTypeSmallBig, ErlTypeLargeBig:
 				var char int64
@@ -172,12 +187,20 @@ func String(r io.Reader) (ret string, err error) {
 				ret += string(char)
 
 			default:
-				err = ErrTypeDiffer
+				err = &ErrTypeDiffer{
+					etype,
+					[]byte{
+						ErlTypeSmallInteger,
+						ErlTypeInteger,
+						ErlTypeSmallBig,
+						ErlTypeLargeBig,
+					},
+				}
 				return
 			}
 		}
 
-		if _, err = io.ReadFull(r, b); err == nil && ErlType(b[0]) != ErlTypeNil {
+		if _, err = io.ReadFull(r, b); err == nil && b[0] != ErlTypeNil {
 			err = ErrImproperList
 		}
 
@@ -185,13 +208,21 @@ func String(r io.Reader) (ret string, err error) {
 		// $j
 
 	default:
-		err = ErrTypeDiffer
+		err = &ErrTypeDiffer{
+			etype,
+			[]byte{
+				ErlTypeString,
+				ErlTypeBinary,
+				ErlTypeList,
+				ErlTypeNil,
+			},
+		}
 	}
 
 	return
 }
 
-func getBigInt(etype ErlType, r io.Reader) (ret *big.Int, err error) {
+func getBigInt(etype byte, r io.Reader) (ret *big.Int, err error) {
 	var size uint32
 	var sign byte
 
@@ -213,7 +244,7 @@ func getBigInt(etype ErlType, r io.Reader) (ret *big.Int, err error) {
 		}
 
 	default:
-		err = ErrTypeDiffer
+		err = &ErrTypeDiffer{etype, []byte{ErlTypeSmallBig, ErlTypeLargeBig}}
 	}
 
 	if err == nil {
@@ -230,7 +261,7 @@ func getBigInt(etype ErlType, r io.Reader) (ret *big.Int, err error) {
 	return
 }
 
-func getBinary(etype ErlType, r io.Reader) (ret []byte, err error) {
+func getBinary(etype byte, r io.Reader) (ret []byte, err error) {
 	switch etype {
 	case ErlTypeBinary:
 		// $mLLLL…
@@ -249,13 +280,13 @@ func getBinary(etype ErlType, r io.Reader) (ret []byte, err error) {
 		}
 
 	default:
-		err = ErrTypeDiffer
+		err = &ErrTypeDiffer{etype, []byte{ErlTypeBinary, ErlTypeString}}
 	}
 
 	return
 }
 
-func getInt64(etype ErlType, r io.Reader) (ret int64, err error) {
+func getInt64(etype byte, r io.Reader) (ret int64, err error) {
 	switch etype {
 	case ErlTypeSmallInteger:
 		// $aI
@@ -280,7 +311,15 @@ func getInt64(etype ErlType, r io.Reader) (ret int64, err error) {
 		}
 
 	default:
-		err = ErrTypeDiffer
+		err = &ErrTypeDiffer{
+			etype,
+			[]byte{
+				ErlTypeSmallInteger,
+				ErlTypeInteger,
+				ErlTypeSmallBig,
+				ErlTypeLargeBig,
+			},
+		}
 	}
 
 	return
@@ -297,9 +336,9 @@ func reverse(b []byte) []byte {
 	return r
 }
 
-func termType(r io.Reader) (ErlType, error) {
+func termType(r io.Reader) (byte, error) {
 	var err error
 	b := make([]byte, 1)
 	_, err = io.ReadFull(r, b)
-	return ErlType(b[0]), err
+	return b[0], err
 }

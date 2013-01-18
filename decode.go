@@ -148,7 +148,7 @@ func decodeList(r io.Reader, v reflect.Value) (err error) {
 
 	switch v.Kind() {
 	case reflect.Slice, reflect.Array:
-		switch t.ErlType(b[0]) {
+		switch b[0] {
 		case t.ErlTypeList:
 			// $lLLLL…$j
 			var listLen uint32
@@ -164,7 +164,7 @@ func decodeList(r io.Reader, v reflect.Value) (err error) {
 			}
 
 			_, err = io.ReadFull(r, b)
-			if err == nil && t.ErlType(b[0]) != t.ErlTypeNil {
+			if err == nil && b[0] != t.ErlTypeNil {
 				err = p.ErrImproperList
 			} else {
 				v.Set(slice)
@@ -220,7 +220,7 @@ func decodeStruct(r io.Reader, v reflect.Value) (err error) {
 		return
 	}
 
-	switch t.ErlType(b[0]) {
+	switch b[0] {
 	case t.ErlTypeSmallTuple:
 		// $hA…
 		var a uint8
@@ -236,7 +236,13 @@ func decodeStruct(r io.Reader, v reflect.Value) (err error) {
 		}
 
 	default:
-		err = p.ErrTypeDiffer
+		err = &p.ErrTypeDiffer{
+			b[0],
+			[]byte{
+				t.ErlTypeSmallTuple,
+				t.ErlTypeLargeTuple,
+			},
+		}
 	}
 
 	if err != nil {
