@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	p "github.com/goerlang/etf/parse"
+	read "github.com/goerlang/etf/read"
 	t "github.com/goerlang/etf/types"
 	"io"
 	"math/big"
@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	atomType     = reflect.ValueOf(t.ErlAtom("")).Type()
+	atomType     = reflect.ValueOf(t.Atom("")).Type()
 	ErrBadFormat = errors.New("etf: bad format")
 )
 
@@ -23,7 +23,7 @@ func Decode(r io.Reader, ptr interface{}) (err error) {
 	b := make([]byte, 1)
 	_, err = io.ReadFull(r, b)
 	if err == nil {
-		if b[0] != t.ErlFormatVersion {
+		if b[0] != t.EtVersion {
 			err = fmt.Errorf("version %d not supported", b[0])
 			return
 		}
@@ -41,14 +41,14 @@ func decode(r io.Reader, ptr reflect.Value) (err error) {
 	switch v.Kind() {
 	case reflect.Bool:
 		var result bool
-		if result, err = p.Bool(r); err == nil {
+		if result, err = read.Bool(r); err == nil {
 			v.SetBool(result)
 		}
 
 	case reflect.Int,
 		reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		var result int64
-		if result, err = p.Int64(r); err != nil {
+		if result, err = read.Int(r); err != nil {
 			break
 		}
 		if v.OverflowInt(result) {
@@ -60,7 +60,7 @@ func decode(r io.Reader, ptr reflect.Value) (err error) {
 	case reflect.Uint, reflect.Uintptr,
 		reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		var result uint64
-		if result, err = p.UInt64(r); err != nil {
+		if result, err = read.Uint(r); err != nil {
 			break
 		}
 		if v.OverflowUint(result) {
@@ -71,7 +71,7 @@ func decode(r io.Reader, ptr reflect.Value) (err error) {
 
 	case reflect.Float32, reflect.Float64:
 		var result float64
-		if result, err = p.Float64(r); err != nil {
+		if result, err = read.Float(r); err != nil {
 			break
 		}
 		if v.OverflowFloat(result) {
@@ -91,13 +91,13 @@ func decode(r io.Reader, ptr reflect.Value) (err error) {
 
 	case reflect.String:
 		if v.Type() == atomType {
-			var result t.ErlAtom
-			if result, err = p.Atom(r); err == nil {
+			var result t.Atom
+			if result, err = read.Atom(r); err == nil {
 				v.Set(reflect.ValueOf(result))
 			}
 		} else {
 			var result string
-			if result, err = p.String(r); err == nil {
+			if result, err = read.String(r); err == nil {
 				v.Set(reflect.ValueOf(result))
 			}
 		}
@@ -124,7 +124,7 @@ func decodeArray(r io.Reader, v reflect.Value) (err error) {
 	switch v.Type().Elem().Kind() {
 	case reflect.Uint8:
 		var result []byte
-		if result, err = p.Binary(r); err == nil {
+		if result, err = read.Binary(r); err == nil {
 			if length == len(result) {
 				for i := range result {
 					v.Index(i).SetUint(uint64(result[i]))
@@ -151,7 +151,7 @@ func decodeList(r io.Reader, v reflect.Value) (err error) {
 	switch v.Kind() {
 	case reflect.Slice, reflect.Array:
 		switch b[0] {
-		case t.ErlTypeList:
+		case t.EttList:
 			// $lLLLL…$j
 			var listLen uint32
 			if err = binary.Read(r, binary.BigEndian, &listLen); err != nil {
@@ -166,13 +166,13 @@ func decodeList(r io.Reader, v reflect.Value) (err error) {
 			}
 
 			_, err = io.ReadFull(r, b)
-			if err == nil && b[0] != t.ErlTypeNil {
-				err = p.ErrImproperList
+			if err == nil && b[0] != t.EttNil {
+				err = read.ErrImproperList
 			} else {
 				v.Set(slice)
 			}
 
-		case t.ErlTypeNil:
+		case t.EttNil:
 			// empty slice -- do not touch it
 			return nil
 		}
@@ -188,7 +188,7 @@ func decodeSlice(r io.Reader, v reflect.Value) (err error) {
 	switch v.Interface().(type) {
 	case []byte:
 		var result []byte
-		if result, err = p.Binary(r); err == nil {
+		if result, err = read.Binary(r); err == nil {
 			v.SetBytes(result)
 		}
 
@@ -203,7 +203,7 @@ func decodeSpecial(r io.Reader, v reflect.Value) (err error) {
 	switch v.Interface().(type) {
 	case *big.Int:
 		var result *big.Int
-		if result, err = p.BigInt(r); err == nil {
+		if result, err = read.BigInt(r); err == nil {
 			v.Set(reflect.ValueOf(result))
 		}
 
@@ -223,14 +223,14 @@ func decodeStruct(r io.Reader, v reflect.Value) (err error) {
 	}
 
 	switch b[0] {
-	case t.ErlTypeSmallTuple:
+	case t.EttSmallTuple:
 		// $hA…
 		var a uint8
 		if err = binary.Read(r, binary.BigEndian, &a); err == nil {
 			arity = int(a)
 		}
 
-	case t.ErlTypeLargeTuple:
+	case t.EttLargeTuple:
 		// $iAAAA…
 		var a uint32
 		if err = binary.Read(r, binary.BigEndian, &a); err == nil {
@@ -238,11 +238,11 @@ func decodeStruct(r io.Reader, v reflect.Value) (err error) {
 		}
 
 	default:
-		err = &p.ErrTypeDiffer{
+		err = &read.ErrTypeDiffer{
 			b[0],
 			[]byte{
-				t.ErlTypeSmallTuple,
-				t.ErlTypeLargeTuple,
+				t.EttSmallTuple,
+				t.EttLargeTuple,
 			},
 		}
 	}

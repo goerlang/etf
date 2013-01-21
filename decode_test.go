@@ -67,7 +67,7 @@ func TestDecodeString(t *testing.T) {
 
 func TestDecodeStruct(t *testing.T) {
 	type testStruct struct {
-		types.ErlAtom
+		types.Atom
 		X uint8
 		S string
 	}
@@ -81,7 +81,7 @@ func TestDecodeStruct(t *testing.T) {
 		t.Fatal(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
-	} else if exp := (testStruct{types.ErlAtom("blah"), 4, "фыва"}); ts != exp {
+	} else if exp := (testStruct{types.Atom("blah"), 4, "фыва"}); ts != exp {
 		t.Errorf("expected %v, got %v", exp, ts)
 	}
 }
@@ -113,7 +113,7 @@ func TestDecodeStruct2(t *testing.T) {
 
 func TestDecodeStruct3(t *testing.T) {
 	type testStruct struct {
-		types.ErlAtom
+		types.Atom
 		X uint8
 		i *big.Int
 		S string
@@ -144,7 +144,7 @@ func TestDecodeStruct3(t *testing.T) {
 	})
 	exp := testStruct3{
 		testStruct{
-			types.ErlAtom("blah"),
+			types.Atom("blah"),
 			4,
 			nilBig,
 			"фыва",

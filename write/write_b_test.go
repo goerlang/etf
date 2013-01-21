@@ -2,7 +2,7 @@ package write
 
 import (
 	"bytes"
-	. "github.com/goerlang/etf/types"
+	t "github.com/goerlang/etf/types"
 	. "io/ioutil"
 	"math"
 	"math/big"
@@ -17,10 +17,10 @@ func BenchmarkAtom(b *testing.B) {
 	rand.Seed(time.Now().UnixNano())
 	max := 64
 	length := 64
-	atoms := make([]ErlAtom, max)
+	atoms := make([]t.Atom, max)
 
 	for i := 0; i < max; i++ {
-		atoms[i] = ErlAtom(bytes.Repeat([]byte{byte('A' + i)}, length))
+		atoms[i] = t.Atom(bytes.Repeat([]byte{byte('A' + i)}, length))
 	}
 
 	b.StartTimer()
@@ -37,7 +37,7 @@ func BenchmarkBigInt(b *testing.B) {
 	b.StopTimer()
 
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
-	uint64Max := big.NewInt(math.MaxInt64)
+	uint64Max := new(big.Int).SetUint64(math.MaxUint64)
 	top := new(big.Int).Mul(uint64Max, uint64Max)
 	max := 512
 	bigints := make([]*big.Int, max)
@@ -105,7 +105,7 @@ func BenchmarkBool(b *testing.B) {
 	}
 }
 
-func BenchmarkFloat64(b *testing.B) {
+func BenchmarkFloat(b *testing.B) {
 	b.StopTimer()
 
 	rand.Seed(time.Now().UnixNano())
@@ -120,13 +120,13 @@ func BenchmarkFloat64(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := floats[i%max]
-		if err := Float64(Discard, in); err != nil {
+		if err := Float(Discard, in); err != nil {
 			b.Fatal(in, err)
 		}
 	}
 }
 
-func BenchmarkInt64(b *testing.B) {
+func BenchmarkInt(b *testing.B) {
 	b.StopTimer()
 
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -141,7 +141,28 @@ func BenchmarkInt64(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := ints[i%max]
-		if err := Int64(Discard, in); err != nil {
+		if err := Int(Discard, in); err != nil {
+			b.Fatal(in, err)
+		}
+	}
+}
+
+func BenchmarkUint(b *testing.B) {
+	b.StopTimer()
+
+	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	max := 512
+	ints := make([]uint64, max)
+
+	for i := 0; i < max; i++ {
+		ints[i] = uint64(rand.Int63() + rand.Int63())
+	}
+
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		in := ints[i%max]
+		if err := Uint(Discard, in); err != nil {
 			b.Fatal(in, err)
 		}
 	}
@@ -153,14 +174,14 @@ func BenchmarkPid(b *testing.B) {
 	rand.Seed(time.Now().UnixNano())
 	max := 64
 	length := 16
-	pids := make([]ErlPid, max)
+	pids := make([]t.Pid, max)
 
 	for i := 0; i < max; i++ {
 		s := bytes.Repeat([]byte{'a'}, length)
 		b := bytes.Map(randRune, s)
 		b[6] = '@'
-		pids[i] = ErlPid{
-			Node(b),
+		pids[i] = t.Pid{
+			t.Node(b),
 			uint32(rand.Intn(65536)),
 			uint32(rand.Intn(256)),
 			byte(rand.Intn(16)),

@@ -1,9 +1,9 @@
-package parse
+package read
 
 import (
 	"bytes"
 	"encoding/binary"
-	. "github.com/goerlang/etf/types"
+	t "github.com/goerlang/etf/types"
 	"io"
 	"math"
 	"math/big"
@@ -24,7 +24,7 @@ func BenchmarkAtom(b *testing.B) {
 		w := new(bytes.Buffer)
 		s := bytes.Repeat([]byte{'a'}, length)
 		b := bytes.Map(randRune, s)
-		w.Write([]byte{ErlTypeSmallAtom, byte(length)})
+		w.Write([]byte{t.EttSmallAtom, byte(length)})
 		w.Write(b)
 		atoms[i] = w
 	}
@@ -60,7 +60,7 @@ func BenchmarkBigInt(b *testing.B) {
 			sign = 1
 		}
 		bytes := reverse(new(big.Int).Abs(a).Bytes())
-		w.Write([]byte{ErlTypeSmallBig, byte(len(bytes)), byte(sign)})
+		w.Write([]byte{t.EttSmallBig, byte(len(bytes)), byte(sign)})
 		w.Write(bytes)
 		bigints[i] = w
 	}
@@ -89,7 +89,7 @@ func BenchmarkBinary(b *testing.B) {
 		w := new(bytes.Buffer)
 		s := bytes.Repeat([]byte{'a'}, length)
 		b := bytes.Map(func(rune) rune { return rune(byte(rand.Int())) }, s)
-		w.Write([]byte{ErlTypeBinary})
+		w.Write([]byte{t.EttBinary})
 		binary.Write(w, binary.BigEndian, uint32(len(b)))
 		w.Write(b)
 		binaries[i] = w
@@ -107,7 +107,7 @@ func BenchmarkBinary(b *testing.B) {
 	}
 }
 
-func BenchmarkFloat64(b *testing.B) {
+func BenchmarkFloat(b *testing.B) {
 	b.StopTimer()
 
 	rand.Seed(time.Now().UnixNano())
@@ -117,7 +117,7 @@ func BenchmarkFloat64(b *testing.B) {
 	for i := 0; i < max; i++ {
 		w := new(bytes.Buffer)
 		v := rand.ExpFloat64() - rand.ExpFloat64()
-		w.Write([]byte{ErlTypeNewFloat})
+		w.Write([]byte{t.EttNewFloat})
 		binary.Write(w, binary.BigEndian, math.Float64bits(v))
 		floats[i] = w
 	}
@@ -126,7 +126,7 @@ func BenchmarkFloat64(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := floats[i%max]
-		_, err := Float64(in)
+		_, err := Float(in)
 
 		if err != io.EOF && err != nil {
 			b.Fatal(err)
@@ -147,7 +147,7 @@ func BenchmarkPid(b *testing.B) {
 		s := bytes.Repeat([]byte{'a'}, length)
 		b := bytes.Map(randRune, s)
 		b[6] = '@'
-		w.Write([]byte{ErlTypePid, ErlTypeSmallAtom, byte(length)})
+		w.Write([]byte{t.EttPid, t.EttSmallAtom, byte(length)})
 		w.Write(b)
 		w.Write([]byte{0, 0, 0, uint8(rand.Int())})
 		w.Write([]byte{0, 0, 0, uint8(rand.Int())})
@@ -179,7 +179,7 @@ func BenchmarkString(b *testing.B) {
 		w := new(bytes.Buffer)
 		s := bytes.Repeat([]byte{'a'}, length)
 		b := bytes.Map(randRune, s)
-		w.Write([]byte{ErlTypeString})
+		w.Write([]byte{t.EttString})
 		binary.Write(w, binary.BigEndian, uint16(len(b)))
 		w.Write(b)
 		strings[i] = w

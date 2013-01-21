@@ -8,7 +8,7 @@ import (
 
 func BenchmarkDecodeStruct(b *testing.B) {
 	type s1 struct {
-		Atom   types.ErlAtom
+		Atom   types.Atom
 		priv0  int
 		Uint8  uint8
 		Uint16 uint16

@@ -1,8 +1,8 @@
-package parse
+package read
 
 import (
 	"bytes"
-	. "github.com/goerlang/etf/types"
+	ty "github.com/goerlang/etf/types"
 	"math/big"
 	"testing"
 )
@@ -14,7 +14,7 @@ func TestAtom(t *testing.T) {
 		t.Fatal(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
-	} else if exp := ErlAtom("abc"); exp != v {
+	} else if exp := ty.Atom("abc"); exp != v {
 		t.Errorf("expected %v, got %v", exp, v)
 	}
 
@@ -24,7 +24,7 @@ func TestAtom(t *testing.T) {
 		t.Fatal(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
-	} else if exp := ErlAtom(""); exp != v {
+	} else if exp := ty.Atom(""); exp != v {
 		t.Errorf("expected %v, got %v", exp, v)
 	}
 
@@ -34,7 +34,7 @@ func TestAtom(t *testing.T) {
 		t.Fatal(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
-	} else if exp := ErlAtom("abc"); exp != v {
+	} else if exp := ty.Atom("abc"); exp != v {
 		t.Errorf("expected %v, got %v", exp, v)
 	}
 
@@ -44,7 +44,7 @@ func TestAtom(t *testing.T) {
 		t.Fatal(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
-	} else if exp := ErlAtom(""); exp != v {
+	} else if exp := ty.Atom(""); exp != v {
 		t.Errorf("expected %v, got %v", exp, v)
 	}
 
@@ -154,13 +154,13 @@ func TestBool(t *testing.T) {
 	}
 }
 
-func TestFloat64(t *testing.T) {
+func TestFloat(t *testing.T) {
 	// 0.1
 	in := bytes.NewBuffer([]byte{
 		99, 49, 46, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
 		48, 48, 48, 53, 53, 53, 49, 101, 45, 48, 49, 0, 0, 0, 0, 0,
 	})
-	if v, err := Float64(in); err != nil {
+	if v, err := Float(in); err != nil {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
@@ -170,7 +170,7 @@ func TestFloat64(t *testing.T) {
 
 	// 0.1
 	in = bytes.NewBuffer([]byte{70, 63, 185, 153, 153, 153, 153, 153, 154})
-	if v, err := Float64(in); err != nil {
+	if v, err := Float(in); err != nil {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
@@ -183,7 +183,7 @@ func TestFloat64(t *testing.T) {
 		99, 49, 46, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
 		48, 48, 48, 53, 53, 53, 49, 101, 45, 48, 49, 0, 0, 0, 0,
 	})
-	if _, err := Float64(in); err == nil {
+	if _, err := Float(in); err == nil {
 		t.Error("err == nil")
 	}
 
@@ -192,25 +192,25 @@ func TestFloat64(t *testing.T) {
 		99, 99, 46, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
 		48, 48, 48, 53, 53, 53, 49, 101, 45, 48, 49, 0, 0, 0, 0, 0,
 	})
-	if _, err := Float64(in); err == nil {
+	if _, err := Float(in); err == nil {
 		t.Error("err == nil")
 	}
 
 	// error (bad length)
-	if _, err := Float64(bytes.NewBuffer([]byte{99})); err == nil {
+	if _, err := Float(bytes.NewBuffer([]byte{99})); err == nil {
 		t.Error("err == nil")
 	}
 
 	// error (bad length)
-	if _, err := Float64(bytes.NewBuffer([]byte{70})); err == nil {
+	if _, err := Float(bytes.NewBuffer([]byte{70})); err == nil {
 		t.Error("err == nil")
 	}
 }
 
-func TestInt64(t *testing.T) {
+func TestInt(t *testing.T) {
 	// 255
 	in := bytes.NewBuffer([]byte{97, 255})
-	if v, err := Int64(in); err != nil {
+	if v, err := Int(in); err != nil {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
@@ -220,7 +220,7 @@ func TestInt64(t *testing.T) {
 
 	// 0x7fffffff
 	in = bytes.NewBuffer([]byte{98, 127, 255, 255, 255})
-	if v, err := Int64(in); err != nil {
+	if v, err := Int(in); err != nil {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
@@ -230,7 +230,7 @@ func TestInt64(t *testing.T) {
 
 	// -0x80000000
 	in = bytes.NewBuffer([]byte{98, 128, 0, 0, 0})
-	if v, err := Int64(in); err != nil {
+	if v, err := Int(in); err != nil {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
@@ -240,7 +240,7 @@ func TestInt64(t *testing.T) {
 
 	// 0x7fffffffffffffff
 	in = bytes.NewBuffer([]byte{110, 8, 0, 255, 255, 255, 255, 255, 255, 255, 127})
-	if v, err := Int64(in); err != nil {
+	if v, err := Int(in); err != nil {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
@@ -250,7 +250,7 @@ func TestInt64(t *testing.T) {
 
 	// -0x8000000000000000
 	in = bytes.NewBuffer([]byte{110, 8, 1, 0, 0, 0, 0, 0, 0, 0, 128})
-	if v, err := Int64(in); err != nil {
+	if v, err := Int(in); err != nil {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
@@ -260,20 +260,20 @@ func TestInt64(t *testing.T) {
 
 	// error (bad length)
 	for _, b := range []byte{97, 98, 110, 111} {
-		if _, err := Int64(bytes.NewBuffer([]byte{b})); err == nil {
+		if _, err := Int(bytes.NewBuffer([]byte{b})); err == nil {
 			t.Error("err == nil (%d)", b)
 		}
 	}
 
 	// error (0x8000000000000000)
 	in = bytes.NewBuffer([]byte{110, 8, 0, 0, 0, 0, 0, 0, 0, 0, 128})
-	if _, err := Int64(in); err == nil {
+	if _, err := Int(in); err == nil {
 		t.Error("err == nil")
 	}
 
 	// error (-0x8000000000000001)
 	in = bytes.NewBuffer([]byte{110, 8, 1, 1, 0, 0, 0, 0, 0, 0, 128})
-	if _, err := Int64(in); err == nil {
+	if _, err := Int(in); err == nil {
 		t.Error("err == nil")
 	}
 }
@@ -286,7 +286,7 @@ func TestPid(t *testing.T) {
 		108, 104, 111, 115, 116, 0,
 		0, 0, 38, 0, 0, 0, 0, 3,
 	})
-	exp := ErlPid{Node("lol@localhost"), 38, 0, 3}
+	exp := ty.Pid{ty.Node("lol@localhost"), 38, 0, 3}
 	if v, err := Pid(in); err != nil {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
@@ -302,7 +302,7 @@ func TestPid(t *testing.T) {
 		111, 104, 111, 115, 116, 0,
 		0, 0, 32, 0, 0, 0, 0, 0,
 	})
-	exp = ErlPid{Node("nonode@nohost"), 32, 0, 0}
+	exp = ty.Pid{ty.Node("nonode@nohost"), 32, 0, 0}
 	if v, err := Pid(in); err != nil {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
@@ -422,5 +422,28 @@ func TestString(t *testing.T) {
 		if _, err := String(bytes.NewBuffer([]byte{b})); err == nil {
 			t.Error("err == nil (%d)", b)
 		}
+	}
+}
+
+func TestTerm(t *testing.T) {
+	in := bytes.NewBuffer([]byte{
+		104, 2,
+		104, 3,
+		100, 0, 4, 98, 108, 97,
+		104, 97, 4,
+		108, 0, 0, 0, 4,
+		98, 0, 0, 4, 68,
+		98, 0, 0, 4, 75,
+		98, 0, 0, 4, 50,
+		98, 0, 0, 4, 48,
+		106,
+		98, 0, 0, 2, 154,
+	})
+	_, err := Term(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l := in.Len(); l != 0 {
+		t.Errorf("buffer len %d", l)
 	}
 }
