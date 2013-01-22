@@ -33,7 +33,7 @@ func BenchmarkAtom(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := atoms[i%max]
-		_, err := Atom(in)
+		_, err := Term(in)
 
 		if err != io.EOF && err != nil {
 			b.Fatal(err)
@@ -69,7 +69,7 @@ func BenchmarkBigInt(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := bigints[i%max]
-		_, err := BigInt(in)
+		_, err := Term(in)
 
 		if err != io.EOF && err != nil {
 			b.Fatal(err)
@@ -99,7 +99,7 @@ func BenchmarkBinary(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := binaries[i%max]
-		_, err := Binary(in)
+		_, err := Term(in)
 
 		if err != io.EOF && err != nil {
 			b.Fatal(err)
@@ -126,7 +126,7 @@ func BenchmarkFloat(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := floats[i%max]
-		_, err := Float(in)
+		_, err := Term(in)
 
 		if err != io.EOF && err != nil {
 			b.Fatal(err)
@@ -159,7 +159,7 @@ func BenchmarkPid(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := pids[i%max]
-		_, err := Pid(in)
+		_, err := Term(in)
 
 		if err != io.EOF && err != nil {
 			b.Fatal(err)
@@ -189,7 +189,7 @@ func BenchmarkString(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := strings[i%max]
-		_, err := String(in)
+		_, err := Term(in)
 
 		if err != io.EOF && err != nil {
 			b.Fatal(err)
