@@ -157,7 +157,7 @@ func Uint(w io.Writer, x uint64) (err error) {
 func Pid(w io.Writer, p t.Pid) (err error) {
 	if _, err = w.Write([]byte{t.EttPid}); err != nil {
 		return
-	} else if err = Atom(w, t.Atom(p.Node)); err != nil {
+	} else if err = Atom(w, p.Node); err != nil {
 		return
 	}
 
