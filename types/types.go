@@ -10,23 +10,22 @@ type Tuple []Term
 type List []Term
 
 type Atom string
-type Node Atom
 
 type Pid struct {
-	Node     Node
+	Node     Atom
 	Id       uint32
 	Serial   uint32
 	Creation byte
 }
 
 type Port struct {
-	Node     Node
+	Node     Atom
 	Id       uint32
 	Creation byte
 }
 
 type Ref struct {
-	Node     Node
+	Node     Atom
 	Creation byte
 	Id       []uint32
 }
@@ -107,6 +106,10 @@ var typeNames = map[byte]string{
 	EttSmallInteger: "SMALL_INTEGER_EXT",
 	EttSmallTuple:   "SMALL_TUPLE_EXT",
 	EttString:       "STRING_EXT",
+}
+
+func (t Tuple) Element(i int) Term {
+	return t[i-1]
 }
 
 func TypeName(t byte) (name string) {
