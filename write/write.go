@@ -250,6 +250,33 @@ func Record(w io.Writer, r interface{}) (err error) {
 	return
 }
 
+func Ref(w io.Writer, ref t.Ref) (err error) {
+	n := len(ref.Id)
+	_, err = w.Write([]byte{t.EttNewReference, byte(n >> 8), byte(n)})
+	if err != nil {
+		return
+	}
+	if err = Atom(w, ref.Node); err != nil {
+		return
+	}
+	if _, err = w.Write([]byte{ref.Creation}); err != nil {
+		return
+	}
+	for _, v := range ref.Id {
+		b := []byte{
+			byte(v >> 24),
+			byte(v >> 16),
+			byte(v >> 8),
+			byte(v),
+		}
+		if _, err = w.Write(b); err != nil {
+			return
+		}
+	}
+
+	return
+}
+
 func Tuple(w io.Writer, tuple t.Tuple) (err error) {
 	n := len(tuple)
 	if n <= math.MaxUint8 {
@@ -299,6 +326,8 @@ func Term(w io.Writer, term t.Term) (err error) {
 		return Pid(w, v)
 	case t.Tuple:
 		return Tuple(w, v)
+	case t.Ref:
+		return Ref(w, v)
 	default:
 		rv := reflect.ValueOf(v)
 		switch rv.Kind() {
