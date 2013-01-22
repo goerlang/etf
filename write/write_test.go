@@ -180,16 +180,16 @@ func TestString(t *testing.T) {
 }
 
 func TestTerm(t *testing.T) {
-	type s1 struct{
+	type s1 struct {
 		L []interface{}
 		F float64
 	}
 	type s2 struct {
 		ty.Atom
-		S string
-		I int
+		S  string
+		I  int
 		S1 s1
-		B byte
+		B  byte
 	}
 	in := s2{
 		ty.Atom("lol"),

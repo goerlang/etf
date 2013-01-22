@@ -153,7 +153,6 @@ func Uint(w io.Writer, x uint64) (err error) {
 	return
 }
 
-
 func Pid(w io.Writer, p t.Pid) (err error) {
 	if _, err = w.Write([]byte{t.EttPid}); err != nil {
 		return
