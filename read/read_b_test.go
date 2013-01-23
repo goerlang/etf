@@ -200,3 +200,14 @@ func BenchmarkString(b *testing.B) {
 func randRune(_ rune) rune {
 	return rune('0' + byte(rand.Intn('z'-'0'+1)))
 }
+
+func reverse(b []byte) []byte {
+	size := len(b)
+	r := make([]byte, size)
+
+	for i := 0; i < size; i++ {
+		r[i] = b[size-i-1]
+	}
+
+	return r
+}

@@ -35,9 +35,34 @@ func atom(b []byte) interface{} {
 	return t.Atom(b)
 }
 
+func readBigInt(r io.Reader, b []byte, sign byte) (interface{}, error) {
+	if _, err := io.ReadFull(r, b); err != nil {
+		return nil, err
+	}
+
+	size := len(b)
+	for i := 0; i < size/2; i++ {
+		tmp := b[i]
+		b[i] = b[size-i-1]
+		b[size-i-1] = tmp
+	}
+
+	v := new(big.Int).SetBytes(b)
+	if sign != 0 {
+		v = v.Neg(v)
+	}
+
+	// try int
+	if x := int(v.Int64()); v.Cmp(big.NewInt(int64(x))) == 0 {
+		return x, nil
+	}
+
+	return v, nil
+}
+
 func Term(r io.Reader) (term t.Term, err error) {
 	var etype byte
-	if etype, err = getEtype(r); err != nil {
+	if etype, err = ruint8(r); err != nil {
 		return nil, err
 	}
 	var b []byte
@@ -74,14 +99,15 @@ func Term(r io.Reader) (term t.Term, err error) {
 	case t.EttFloat:
 		// $cFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0
 		b = make([]byte, 31)
-		if _, err = io.ReadFull(r, b); err == nil {
-			var r int
-			var f float64
-			if r, err = fmt.Sscanf(string(b), "%f", &f); r != 1 && err == nil {
-				err = ErrFloatScan
-			}
-			term = f
+		if _, err = io.ReadFull(r, b); err != nil {
+			return
 		}
+		var r int
+		var f float64
+		if r, err = fmt.Sscanf(string(b), "%f", &f); r != 1 && err == nil {
+			err = ErrFloatScan
+		}
+		term = f
 
 	case t.EttNewFloat:
 		// $FFFFFFFFF
@@ -110,43 +136,17 @@ func Term(r io.Reader) (term t.Term, err error) {
 		}
 		sign := b[1]
 		b = make([]byte, b[0])
-		if _, err = io.ReadFull(r, b); err != nil {
-			break
-		}
-		v := new(big.Int).SetBytes(reverse(b))
-		if sign != 0 {
-			v = v.Neg(v)
-		}
-
-		// try int
-		if x := int(v.Int64()); v.Cmp(big.NewInt(int64(x))) == 0 {
-			term = x
-		} else {
-			term = v
-		}
+		term, err = readBigInt(r, b, sign)
 
 	case t.EttLargeBig:
 		// $oAAAAS…
-		b := make([]byte, 5)
+		b = make([]byte, 5)
 		if _, err = io.ReadFull(r, b); err != nil {
 			break
 		}
 		sign := b[4]
 		b = make([]byte, be.Uint32(b[:4]))
-		if _, err = io.ReadFull(r, b); err != nil {
-			break
-		}
-		v := new(big.Int).SetBytes(reverse(b))
-		if sign != 0 {
-			v = v.Neg(v)
-		}
-
-		// try int
-		if x := int(v.Int64()); v.Cmp(big.NewInt(int64(x))) == 0 {
-			term = x
-		} else {
-			term = v
-		}
+		term, err = readBigInt(r, b, sign)
 
 	case t.EttNil:
 		// $j
@@ -259,7 +259,6 @@ func Term(r io.Reader) (term t.Term, err error) {
 			case t.EttCachedAtom:
 			case t.EttExport:
 			case t.EttFun:
-			case t.EttList:
 			case t.EttNewCache:
 			case t.EttNewFun:
 			case t.EttPort:
@@ -271,24 +270,6 @@ func Term(r io.Reader) (term t.Term, err error) {
 	return
 }
 
-func reverse(b []byte) []byte {
-	size := len(b)
-	r := make([]byte, size)
-
-	for i := 0; i < size; i++ {
-		r[i] = b[size-i-1]
-	}
-
-	return r
-}
-
-func getEtype(r io.Reader) (byte, error) {
-	var err error
-	b := make([]byte, 1)
-	_, err = io.ReadFull(r, b)
-	return b[0], err
-}
-
 func ruint8(r io.Reader) (uint8, error) {
 	b := []byte{0}
 	_, err := io.ReadFull(r, b)
@@ -298,13 +279,13 @@ func ruint8(r io.Reader) (uint8, error) {
 func ruint16(r io.Reader) (uint16, error) {
 	b := []byte{0, 0}
 	_, err := io.ReadFull(r, b)
-	return binary.BigEndian.Uint16(b), err
+	return be.Uint16(b), err
 }
 
 func ruint32(r io.Reader) (uint32, error) {
 	b := []byte{0, 0, 0, 0}
 	_, err := io.ReadFull(r, b)
-	return binary.BigEndian.Uint32(b), err
+	return be.Uint32(b), err
 }
 
 func buint8(r io.Reader) ([]byte, error) {
