@@ -41,10 +41,9 @@ func readBigInt(r io.Reader, b []byte, sign byte) (interface{}, error) {
 	}
 
 	size := len(b)
-	for i := 0; i < size/2; i++ {
-		tmp := b[i]
-		b[i] = b[size-i-1]
-		b[size-i-1] = tmp
+	hsize := size >> 1
+	for i := 0; i < hsize; i++ {
+		b[i], b[size-i-1] = b[size-i-1], b[i]
 	}
 
 	v := new(big.Int).SetBytes(b)

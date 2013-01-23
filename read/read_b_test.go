@@ -203,11 +203,10 @@ func randRune(_ rune) rune {
 
 func reverse(b []byte) []byte {
 	size := len(b)
-	r := make([]byte, size)
-
-	for i := 0; i < size; i++ {
-		r[i] = b[size-i-1]
+	hsize := size >> 1
+	for i := 0; i < hsize; i++ {
+		b[i], b[size-i-1] = b[size-i-1], b[i]
 	}
 
-	return r
+	return b
 }
