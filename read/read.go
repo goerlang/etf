@@ -92,9 +92,9 @@ func Term(r io.Reader) (term t.Term, err error) {
 
 	case t.EttSmallInteger:
 		// $aI
-		b = make([]byte, 1)
-		_, err = io.ReadFull(r, b)
-		term = b[0]
+		var x uint8
+		x, err = ruint8(r)
+		term = int(x)
 
 	case t.EttInteger:
 		// $bIIII
@@ -114,13 +114,12 @@ func Term(r io.Reader) (term t.Term, err error) {
 			break
 		}
 		v := new(big.Int).SetBytes(reverse(b))
-
 		if sign != 0 {
 			v = v.Neg(v)
 		}
 
-		// try int64
-		if x := v.Int64(); v.Cmp(big.NewInt(x)) == 0 {
+		// try int
+		if x := int(v.Int64()); v.Cmp(big.NewInt(int64(x))) == 0 {
 			term = x
 		} else {
 			term = v
@@ -138,11 +137,16 @@ func Term(r io.Reader) (term t.Term, err error) {
 			break
 		}
 		v := new(big.Int).SetBytes(reverse(b))
-
 		if sign != 0 {
 			v = v.Neg(v)
 		}
-		term = v
+
+		// try int
+		if x := int(v.Int64()); v.Cmp(big.NewInt(int64(x))) == 0 {
+			term = x
+		} else {
+			term = v
+		}
 
 	case t.EttNil:
 		// $j

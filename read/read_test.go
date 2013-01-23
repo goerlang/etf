@@ -151,7 +151,7 @@ func TestInt(t *testing.T) {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
-	} else if exp := byte(255); exp != v {
+	} else if exp := 255; exp != v {
 		t.Errorf("expected %v, got %v", exp, v)
 	}
 
@@ -181,7 +181,7 @@ func TestInt(t *testing.T) {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
-	} else if exp := int64(0x7fffffffffffffff); exp != v {
+	} else if exp := 0x7fffffffffffffff; exp != v {
 		t.Errorf("expected %v, got %v", exp, v)
 	}
 
@@ -191,7 +191,7 @@ func TestInt(t *testing.T) {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
-	} else if exp := int64(-0x8000000000000000); exp != v {
+	} else if exp := -0x8000000000000000; exp != v {
 		t.Errorf("expected %v, got %v", exp, v)
 	}
 
@@ -253,7 +253,7 @@ func TestInt(t *testing.T) {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
-	} else if v, exp := v.(int64), int64(0); v != exp {
+	} else if exp := 0; v != exp {
 		t.Errorf("expected %v, got %v", exp, v)
 	}
 
@@ -263,7 +263,7 @@ func TestInt(t *testing.T) {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
-	} else if v, exp := big.NewInt(0).Cmp(v.(*big.Int)), 0; v != exp {
+	} else if exp := 0; v != exp {
 		t.Errorf("expected %v, got %v", exp, v)
 	}
 }
