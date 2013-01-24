@@ -2,9 +2,11 @@ package write
 
 import (
 	"bytes"
+	"reflect"
 	"github.com/goerlang/etf/read"
 	ty "github.com/goerlang/etf/types"
 	"math"
+	"math/big"
 	"testing"
 )
 
@@ -17,7 +19,7 @@ func TestAtom(t *testing.T) {
 			}
 		} else if shouldFail {
 			t.Error("err == nil (%v)", in)
-		} else if v, err := read.Atom(w); err != nil {
+		} else if v, err := read.Term(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
@@ -38,11 +40,11 @@ func TestBinary(t *testing.T) {
 		w := new(bytes.Buffer)
 		if err := Binary(w, in); err != nil {
 			t.Error(in, err)
-		} else if v, err := read.Binary(w); err != nil {
+		} else if v, err := read.Term(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
-		} else if bytes.Compare(v, in) != 0 {
+		} else if bytes.Compare(v.([]byte), in) != 0 {
 			t.Errorf("expected %v, got %v", in, v)
 		}
 	}
@@ -57,7 +59,7 @@ func TestBool(t *testing.T) {
 		w := new(bytes.Buffer)
 		if err := Bool(w, in); err != nil {
 			t.Error(in, err)
-		} else if v, err := read.Bool(w); err != nil {
+		} else if v, err := read.Term(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
@@ -75,7 +77,7 @@ func TestFloat(t *testing.T) {
 		w := new(bytes.Buffer)
 		if err := Float(w, in); err != nil {
 			t.Error(in, err)
-		} else if v, err := read.Float(w); err != nil {
+		} else if v, err := read.Term(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
@@ -95,11 +97,11 @@ func TestInt(t *testing.T) {
 		w := new(bytes.Buffer)
 		if err := Int(w, in); err != nil {
 			t.Error(in, err)
-		} else if v, err := read.Int(w); err != nil {
+		} else if v, err := read.Term(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
-		} else if v != in {
+		} else if reflect.ValueOf(v).Int() != in {
 			t.Errorf("expected %v, got %v", in, v)
 		}
 	}
@@ -121,12 +123,23 @@ func TestUint(t *testing.T) {
 		w := new(bytes.Buffer)
 		if err := Uint(w, in); err != nil {
 			t.Error(in, err)
-		} else if v, err := read.Uint(w); err != nil {
+		} else if v, err := read.Term(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
-		} else if v != in {
-			t.Errorf("expected %v, got %v", in, v)
+		} else {
+			var uv uint64
+			switch v := v.(type) {
+			case int:
+				uv = uint64(v)
+			case int64:
+				uv = uint64(v)
+			case *big.Int:
+				uv = v.Uint64()
+			}
+			if uv != in {
+				t.Errorf("expected %v, got %v", in, v)
+			}
 		}
 	}
 
@@ -143,7 +156,7 @@ func TestPid(t *testing.T) {
 		w := new(bytes.Buffer)
 		if err := Pid(w, in); err != nil {
 			t.Error(in, err)
-		} else if v, err := read.Pid(w); err != nil {
+		} else if v, err := read.Term(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
@@ -152,8 +165,8 @@ func TestPid(t *testing.T) {
 		}
 	}
 
-	test(ty.Pid{ty.Node("omg@lol"), 38, 0, 3})
-	test(ty.Pid{ty.Node("self@localhost"), 32, 1, 9})
+	test(ty.Pid{ty.Atom("omg@lol"), 38, 0, 3})
+	test(ty.Pid{ty.Atom("self@localhost"), 32, 1, 9})
 }
 
 func TestString(t *testing.T) {
@@ -165,7 +178,7 @@ func TestString(t *testing.T) {
 			}
 		} else if shouldFail {
 			t.Error("err == nil (%v)", in)
-		} else if v, err := read.String(w); err != nil {
+		} else if v, err := read.Term(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)

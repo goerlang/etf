@@ -181,7 +181,7 @@ func BenchmarkPid(b *testing.B) {
 		b := bytes.Map(randRune, s)
 		b[6] = '@'
 		pids[i] = t.Pid{
-			t.Node(b),
+			t.Atom(b),
 			uint32(rand.Intn(65536)),
 			uint32(rand.Intn(256)),
 			byte(rand.Intn(16)),
