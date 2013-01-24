@@ -306,36 +306,38 @@ func Tuple(w io.Writer, tuple t.Tuple) (err error) {
 func Term(w io.Writer, term t.Term) (err error) {
 	switch v := term.(type) {
 	case bool:
-		return Bool(w, v)
+		err = Bool(w, v)
 	case int8, int16, int32, int64, int:
-		return Int(w, reflect.ValueOf(term).Int())
+		err = Int(w, reflect.ValueOf(term).Int())
 	case uint8, uint16, uint32, uint64, uintptr, uint:
-		return Uint(w, reflect.ValueOf(term).Uint())
+		err = Uint(w, reflect.ValueOf(term).Uint())
+	case *big.Int:
+		err = BigInt(w, v)
 	case string:
-		return String(w, v)
+		err = String(w, v)
 	case []byte:
-		return Binary(w, v)
-	case t.Atom:
-		return Atom(w, v)
+		err = Binary(w, v)
 	case float64:
-		return Float(w, v)
+		err = Float(w, v)
 	case float32:
-		return Float(w, float64(v))
+		err = Float(w, float64(v))
+	case t.Atom:
+		err = Atom(w, v)
 	case t.Pid:
-		return Pid(w, v)
+		err = Pid(w, v)
 	case t.Tuple:
-		return Tuple(w, v)
+		err = Tuple(w, v)
 	case t.Ref:
-		return Ref(w, v)
+		err = Ref(w, v)
 	default:
 		rv := reflect.ValueOf(v)
 		switch rv.Kind() {
 		case reflect.Struct:
-			return Record(w, term)
+			err = Record(w, term)
 		case reflect.Array, reflect.Slice:
-			return List(w, term)
+			err = List(w, term)
 		case reflect.Ptr:
-			return Term(w, rv.Elem())
+			err = Term(w, rv.Elem())
 		//case reflect.Map // FIXME
 		default:
 			err = &ErrUnknownType{rv.Type()}
