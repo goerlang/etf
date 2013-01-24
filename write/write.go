@@ -93,10 +93,11 @@ func Binary(w io.Writer, bytes []byte) (err error) {
 }
 
 func Bool(w io.Writer, b bool) (err error) {
+	// $sL…
 	if b {
-		err = Atom(w, t.Atom("true"))
+		_, err = w.Write([]byte{t.EttSmallAtom, 4, 't', 'r', 'u', 'e'})
 	} else {
-		err = Atom(w, t.Atom("false"))
+		_, err = w.Write([]byte{t.EttSmallAtom, 5, 'f', 'a', 'l', 's', 'e'})
 	}
 
 	return
