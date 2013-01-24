@@ -134,7 +134,7 @@ func BenchmarkInt(b *testing.B) {
 	ints := make([]int64, max)
 
 	for i := 0; i < max; i++ {
-		ints[i] = rand.Int63() - rand.Int63()
+		ints[i] = int64(rand.Int31() - rand.Int31())
 	}
 
 	b.StartTimer()
@@ -155,7 +155,7 @@ func BenchmarkUint(b *testing.B) {
 	ints := make([]uint64, max)
 
 	for i := 0; i < max; i++ {
-		ints[i] = uint64(rand.Int63() + rand.Int63())
+		ints[i] = uint64(rand.Int31())
 	}
 
 	b.StartTimer()
