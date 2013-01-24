@@ -181,8 +181,17 @@ func TestInt(t *testing.T) {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
-	} else if exp := 0x7fffffffffffffff; exp != v {
-		t.Errorf("expected %v, got %v", exp, v)
+	} else {
+		var v64 int64
+		switch v := v.(type) {
+		case int:
+			v64 = int64(v)
+		case int64:
+			v64 = v
+		}
+		if exp := int64(0x7fffffffffffffff); exp != v64 {
+			t.Errorf("expected %v, got %v", exp, v64)
+		}
 	}
 
 	// -0x8000000000000000
@@ -191,8 +200,17 @@ func TestInt(t *testing.T) {
 		t.Error(err)
 	} else if l := in.Len(); l != 0 {
 		t.Errorf("buffer len %d", l)
-	} else if exp := -0x8000000000000000; exp != v {
-		t.Errorf("expected %v, got %v", exp, v)
+	} else {
+		var v64 int64
+		switch v := v.(type) {
+		case int:
+			v64 = int64(v)
+		case int64:
+			v64 = v
+		}
+		if exp := int64(-0x8000000000000000); exp != v64 {
+			t.Errorf("expected %v, got %v", exp, v64)
+		}
 	}
 
 	// error (bad length)

@@ -35,7 +35,7 @@ func atom(b []byte) interface{} {
 	return t.Atom(b)
 }
 
-func readBigInt(r io.Reader, b []byte, sign byte) (interface{}, error) {
+func bigInt(r io.Reader, b []byte, sign byte) (interface{}, error) {
 	if _, err := io.ReadFull(r, b); err != nil {
 		return nil, err
 	}
@@ -51,9 +51,12 @@ func readBigInt(r io.Reader, b []byte, sign byte) (interface{}, error) {
 		v = v.Neg(v)
 	}
 
-	// try int
-	if x := int(v.Int64()); v.Cmp(big.NewInt(int64(x))) == 0 {
+	// try int and int64
+	v64 := v.Int64()
+	if x := int(v64); v.Cmp(big.NewInt(int64(x))) == 0 {
 		return x, nil
+	} else if v.Cmp(big.NewInt(v64)) == 0 {
+		return v64, nil
 	}
 
 	return v, nil
@@ -135,7 +138,7 @@ func Term(r io.Reader) (term t.Term, err error) {
 		}
 		sign := b[1]
 		b = make([]byte, b[0])
-		term, err = readBigInt(r, b, sign)
+		term, err = bigInt(r, b, sign)
 
 	case t.EttLargeBig:
 		// $oAAAAS…
@@ -145,7 +148,7 @@ func Term(r io.Reader) (term t.Term, err error) {
 		}
 		sign := b[4]
 		b = make([]byte, be.Uint32(b[:4]))
-		term, err = readBigInt(r, b, sign)
+		term, err = bigInt(r, b, sign)
 
 	case t.EttNil:
 		// $j
