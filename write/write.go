@@ -121,6 +121,7 @@ func Int(w io.Writer, x int64) (err error) {
 
 	case x >= math.MinInt32 && x <= math.MaxInt32:
 		// $bIIII
+		x := int32(x)
 		_, err = w.Write([]byte{
 			t.EttInteger,
 			byte(x >> 24), byte(x >> 16), byte(x >> 8), byte(x),
