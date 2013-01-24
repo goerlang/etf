@@ -21,17 +21,17 @@ func (e *ErrUnknownType) Error() string {
 
 func Atom(w io.Writer, atom t.Atom) (err error) {
 	switch size := len(atom); {
-	case size <= 0xff:
+	case size <= math.MaxUint8:
 		// $sL…
 		if _, err = w.Write([]byte{t.EttSmallAtom, byte(size)}); err == nil {
-			_, err = w.Write([]byte(atom))
+			_, err = io.WriteString(w, string(atom))
 		}
 
-	case size <= 0xffff:
+	case size <= math.MaxUint16:
 		// $dLL…
 		_, err = w.Write([]byte{byte(t.EttAtom), byte(size >> 8), byte(size)})
 		if err == nil {
-			_, err = w.Write([]byte(atom))
+			_, err = io.WriteString(w, string(atom))
 		}
 
 	default:
@@ -50,11 +50,11 @@ func BigInt(w io.Writer, x *big.Int) (err error) {
 	bytes := reverse(new(big.Int).Abs(x).Bytes())
 
 	switch size := len(bytes); {
-	case size <= 0xff:
+	case size <= math.MaxUint8:
 		// $nAS…
 		_, err = w.Write([]byte{t.EttSmallBig, byte(size), byte(sign)})
 
-	case int(uint32(size)) == size:
+	case size <= math.MaxUint32:
 		// $oAAAAS…
 		_, err = w.Write([]byte{
 			t.EttLargeBig,
@@ -75,7 +75,7 @@ func BigInt(w io.Writer, x *big.Int) (err error) {
 
 func Binary(w io.Writer, bytes []byte) (err error) {
 	switch size := len(bytes); {
-	case int(uint32(size)) == size:
+	case size <= math.MaxUint32:
 		// $mLLLL…
 		data := []byte{
 			t.EttBinary,
@@ -176,7 +176,7 @@ func Pid(w io.Writer, p t.Pid) (err error) {
 
 func String(w io.Writer, s string) (err error) {
 	switch size := len(s); {
-	case size <= 0xffff:
+	case size <= math.MaxUint16:
 		// $kLL…
 		_, err = w.Write([]byte{t.EttString, byte(size >> 8), byte(size)})
 		if err == nil {
