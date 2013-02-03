@@ -256,8 +256,21 @@ func Term(r io.Reader) (term t.Term, err error) {
 		}
 		term = list
 
+	case t.EttBitBinary:
+		// $MLLLLB…
+		var length uint32
+		var bits uint8
+		if length, err = ruint32(r); err != nil {
+			break
+		} else if bits, err = ruint8(r); err != nil {
+			break
+		}
+		b := make([]byte, length)
+		_, err = io.ReadFull(r, b)
+		b[len(b)-1] = b[len(b)-1] >> (8 - bits)
+		term = b
+
 		/*
-			case t.EttBitBinary:
 			case t.EttCachedAtom:
 			case t.EttExport:
 			case t.EttFun:

@@ -59,6 +59,30 @@ func TestAtom(t *testing.T) {
 	}
 }
 
+func TestBinary(t *testing.T) {
+	// <<1,2,3,4,5>>
+	in := bytes.NewBuffer([]byte{109, 0, 0, 0, 5, 1, 2, 3, 4, 5})
+	if v, err := Term(in); err != nil {
+		t.Error(err)
+	} else if l := in.Len(); l != 0 {
+		t.Errorf("buffer len %d", l)
+	} else if exp := []byte{1, 2, 3, 4, 5}; bytes.Compare(exp, v.([]byte)) != 0 {
+		t.Errorf("expected %v, got %v", exp, v)
+	}
+}
+
+func TestBitBinary(t *testing.T) {
+	// <<1,2,3,4,5:3>>
+	in := bytes.NewBuffer([]byte{77, 0, 0, 0, 5, 3, 1, 2, 3, 4, 160})
+	if v, err := Term(in); err != nil {
+		t.Error(err)
+	} else if l := in.Len(); l != 0 {
+		t.Errorf("buffer len %d", l)
+	} else if exp := []byte{1, 2, 3, 4, 5}; bytes.Compare(exp, v.([]byte)) != 0 {
+		t.Errorf("expected %v, got %v", exp, v)
+	}
+}
+
 func TestBool(t *testing.T) {
 	// true
 	in := bytes.NewBuffer([]byte{100, 0, 4, 't', 'r', 'u', 'e'})
