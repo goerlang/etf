@@ -70,15 +70,15 @@ func Term(r io.Reader) (term t.Term, err error) {
 	var b []byte
 
 	switch etype {
-	case t.EttAtom:
-		// $dLL…
+	case t.EttAtom, t.EttAtomUTF8:
+		// $dLL… | $vLL…
 		if b, err = buint16(r); err == nil {
 			_, err = io.ReadFull(r, b)
 			term = atom(b)
 		}
 
-	case t.EttSmallAtom:
-		// $sL…
+	case t.EttSmallAtom, t.EttSmallAtomUTF8:
+		// $sL…, $wL…
 		if b, err = buint8(r); err == nil {
 			_, err = io.ReadFull(r, b)
 			term = atom(b)

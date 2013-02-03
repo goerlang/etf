@@ -50,30 +50,32 @@ type Export struct {
 
 // Erlang types.
 const (
-	EttAtom         = 'd'
-	EttBinary       = 'm'
-	EttBitBinary    = 'M'
-	EttCachedAtom   = 'C'
-	EttExport       = 'q'
-	EttFloat        = 'c'
-	EttFun          = 'u'
-	EttInteger      = 'b'
-	EttLargeBig     = 'o'
-	EttLargeTuple   = 'i'
-	EttList         = 'l'
-	EttNewCache     = 'N'
-	EttNewFloat     = 'F'
-	EttNewFun       = 'p'
-	EttNewReference = 'r'
-	EttNil          = 'j'
-	EttPid          = 'g'
-	EttPort         = 'f'
-	EttReference    = 'e'
-	EttSmallAtom    = 's'
-	EttSmallBig     = 'n'
-	EttSmallInteger = 'a'
-	EttSmallTuple   = 'h'
-	EttString       = 'k'
+	EttAtom          = 'd'
+	EttAtomUTF8      = 'v' // this is beyond retarded
+	EttBinary        = 'm'
+	EttBitBinary     = 'M'
+	EttCachedAtom    = 'C'
+	EttExport        = 'q'
+	EttFloat         = 'c'
+	EttFun           = 'u'
+	EttInteger       = 'b'
+	EttLargeBig      = 'o'
+	EttLargeTuple    = 'i'
+	EttList          = 'l'
+	EttNewCache      = 'N'
+	EttNewFloat      = 'F'
+	EttNewFun        = 'p'
+	EttNewReference  = 'r'
+	EttNil           = 'j'
+	EttPid           = 'g'
+	EttPort          = 'f'
+	EttReference     = 'e'
+	EttSmallAtom     = 's'
+	EttSmallAtomUTF8 = 'w' // this is beyond retarded
+	EttSmallBig      = 'n'
+	EttSmallInteger  = 'a'
+	EttSmallTuple    = 'h'
+	EttString        = 'k'
 )
 
 const (
@@ -82,30 +84,32 @@ const (
 )
 
 var typeNames = map[byte]string{
-	EttAtom:         "ATOM_EXT",
-	EttBinary:       "BINARY_EXT",
-	EttBitBinary:    "BIT_BINARY_EXT",
-	EttCachedAtom:   "ATOM_CACHE_REF",
-	EttExport:       "EXPORT_EXT",
-	EttFloat:        "FLOAT_EXT",
-	EttFun:          "FUN_EXT",
-	EttInteger:      "INTEGER_EXT",
-	EttLargeBig:     "LARGE_BIG_EXT",
-	EttLargeTuple:   "LARGE_TUPLE_EXT",
-	EttList:         "LIST_EXT",
-	EttNewCache:     "NewCache",
-	EttNewFloat:     "NEW_FLOAT_EXT",
-	EttNewFun:       "NEW_FUN_EXT",
-	EttNewReference: "NEW_REFERENCE_EXT",
-	EttNil:          "NIL_EXT",
-	EttPid:          "PID_EXT",
-	EttPort:         "PORT_EXT",
-	EttReference:    "REFERENCE_EXT",
-	EttSmallAtom:    "SMALL_ATOM_EXT",
-	EttSmallBig:     "SMALL_BIG_EXT",
-	EttSmallInteger: "SMALL_INTEGER_EXT",
-	EttSmallTuple:   "SMALL_TUPLE_EXT",
-	EttString:       "STRING_EXT",
+	EttAtom:          "ATOM_EXT",
+	EttAtomUTF8:      "ATOM_UTF8_EXT",
+	EttBinary:        "BINARY_EXT",
+	EttBitBinary:     "BIT_BINARY_EXT",
+	EttCachedAtom:    "ATOM_CACHE_REF",
+	EttExport:        "EXPORT_EXT",
+	EttFloat:         "FLOAT_EXT",
+	EttFun:           "FUN_EXT",
+	EttInteger:       "INTEGER_EXT",
+	EttLargeBig:      "LARGE_BIG_EXT",
+	EttLargeTuple:    "LARGE_TUPLE_EXT",
+	EttList:          "LIST_EXT",
+	EttNewCache:      "NewCache",
+	EttNewFloat:      "NEW_FLOAT_EXT",
+	EttNewFun:        "NEW_FUN_EXT",
+	EttNewReference:  "NEW_REFERENCE_EXT",
+	EttNil:           "NIL_EXT",
+	EttPid:           "PID_EXT",
+	EttPort:          "PORT_EXT",
+	EttReference:     "REFERENCE_EXT",
+	EttSmallAtom:     "SMALL_ATOM_EXT",
+	EttSmallAtomUTF8: "SMALL_ATOM_UTF8_EXT",
+	EttSmallBig:      "SMALL_BIG_EXT",
+	EttSmallInteger:  "SMALL_INTEGER_EXT",
+	EttSmallTuple:    "SMALL_TUPLE_EXT",
+	EttString:        "STRING_EXT",
 }
 
 func (t Tuple) Element(i int) Term {
