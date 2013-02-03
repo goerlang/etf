@@ -308,6 +308,7 @@ func Term(r io.Reader) (term t.Term, err error) {
 		f.OldIndex = uint32(oldi.(int))
 		f.OldUnique = uint32(oldu.(int))
 		f.Pid = pid.(t.Pid)
+		term = f
 
 	case t.EttFun:
 		// $uFFFFP…M…i…u…[V…]
@@ -329,11 +330,20 @@ func Term(r io.Reader) (term t.Term, err error) {
 		f.OldIndex = uint32(oldi.(int))
 		f.OldUnique = uint32(oldu.(int))
 		f.Pid = pid.(t.Pid)
+		term = f
+
+	case t.EttPort:
+		// $fA…IIIIC
+		var p t.Port
+		a, _ := Term(r)
+		p.Node = a.(t.Atom)
+		p.Id, _ = ruint32(r)
+		p.Creation, err = ruint8(r)
+		term = p
 
 		/*
 			case t.EttCachedAtom:
 			case t.EttNewCache:
-			case t.EttPort:
 		*/
 	default:
 		err = &ErrUnknownTerm{etype}
