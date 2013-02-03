@@ -284,6 +284,31 @@ func Term(r io.Reader) (term t.Term, err error) {
 
 		term = t.Export{m.(t.Atom), f.(t.Atom), a}
 
+	case t.EttNewFun:
+		// $pSSSSAUUUUUUUUUUUUUUUUIIIIFFFFM…i…u…P…[V…]
+		var f t.Function
+		ruint32(r)
+		f.Arity, _ = ruint8(r)
+		io.ReadFull(r, f.Unique[:])
+		f.Index, _ = ruint32(r)
+		f.Free, _ = ruint32(r)
+		m, _ := Term(r)
+		oldi, _ := Term(r)
+		oldu, _ := Term(r)
+		pid, _ := Term(r)
+
+		f.FreeVars = make([]t.Term, f.Free)
+		for i := 0; i < cap(f.FreeVars); i++ {
+			if f.FreeVars[i], err = Term(r); err != nil {
+				break
+			}
+		}
+
+		f.Module = m.(t.Atom)
+		f.OldIndex = uint32(oldi.(int))
+		f.OldUnique = uint32(oldu.(int))
+		f.Pid = pid.(t.Pid)
+
 		/*
 			case t.EttCachedAtom:
 			case t.EttFun:
