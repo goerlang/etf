@@ -270,9 +270,22 @@ func Term(r io.Reader) (term t.Term, err error) {
 		b[len(b)-1] = b[len(b)-1] >> (8 - bits)
 		term = b
 
+	case t.EttExport:
+		// $qM…F…A
+		var m, f interface{}
+		var a uint8
+		if m, err = Term(r); err != nil {
+			break
+		} else if f, err = Term(r); err != nil {
+			break
+		} else if a, err = ruint8(r); err != nil {
+			break
+		}
+
+		term = t.Export{m.(t.Atom), f.(t.Atom), a}
+
 		/*
 			case t.EttCachedAtom:
-			case t.EttExport:
 			case t.EttFun:
 			case t.EttNewCache:
 			case t.EttNewFun:
