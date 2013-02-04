@@ -1,9 +1,8 @@
-package read
+package etf
 
 import (
 	"bytes"
 	"encoding/binary"
-	t "github.com/goerlang/etf/types"
 	"io"
 	"math"
 	"math/big"
@@ -12,8 +11,9 @@ import (
 	"time"
 )
 
-func BenchmarkAtom(b *testing.B) {
+func BenchmarkReadAtom(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand.Seed(time.Now().UnixNano())
 	max := 64
@@ -24,7 +24,7 @@ func BenchmarkAtom(b *testing.B) {
 		w := new(bytes.Buffer)
 		s := bytes.Repeat([]byte{'a'}, length)
 		b := bytes.Map(randRune, s)
-		w.Write([]byte{t.EttSmallAtom, byte(length)})
+		w.Write([]byte{ettSmallAtom, byte(length)})
 		w.Write(b)
 		atoms[i] = w
 	}
@@ -33,7 +33,7 @@ func BenchmarkAtom(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := atoms[i%max]
-		_, err := Term(in)
+		_, err := c.Read(in)
 
 		if err != io.EOF && err != nil {
 			b.Fatal(err)
@@ -41,8 +41,9 @@ func BenchmarkAtom(b *testing.B) {
 	}
 }
 
-func BenchmarkBigInt(b *testing.B) {
+func BenchmarkReadBigInt(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	uint64Max := big.NewInt(math.MaxInt64)
@@ -60,7 +61,7 @@ func BenchmarkBigInt(b *testing.B) {
 			sign = 1
 		}
 		bytes := reverse(new(big.Int).Abs(a).Bytes())
-		w.Write([]byte{t.EttSmallBig, byte(len(bytes)), byte(sign)})
+		w.Write([]byte{ettSmallBig, byte(len(bytes)), byte(sign)})
 		w.Write(bytes)
 		bigints[i] = w
 	}
@@ -69,7 +70,7 @@ func BenchmarkBigInt(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := bigints[i%max]
-		_, err := Term(in)
+		_, err := c.Read(in)
 
 		if err != io.EOF && err != nil {
 			b.Fatal(err)
@@ -77,8 +78,9 @@ func BenchmarkBigInt(b *testing.B) {
 	}
 }
 
-func BenchmarkBinary(b *testing.B) {
+func BenchmarkReadBinary(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand.Seed(time.Now().UnixNano())
 	max := 64
@@ -89,7 +91,7 @@ func BenchmarkBinary(b *testing.B) {
 		w := new(bytes.Buffer)
 		s := bytes.Repeat([]byte{'a'}, length)
 		b := bytes.Map(func(rune) rune { return rune(byte(rand.Int())) }, s)
-		w.Write([]byte{t.EttBinary})
+		w.Write([]byte{ettBinary})
 		binary.Write(w, binary.BigEndian, uint32(len(b)))
 		w.Write(b)
 		binaries[i] = w
@@ -99,7 +101,7 @@ func BenchmarkBinary(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := binaries[i%max]
-		_, err := Term(in)
+		_, err := c.Read(in)
 
 		if err != io.EOF && err != nil {
 			b.Fatal(err)
@@ -107,8 +109,9 @@ func BenchmarkBinary(b *testing.B) {
 	}
 }
 
-func BenchmarkFloat(b *testing.B) {
+func BenchmarkReadFloat(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand.Seed(time.Now().UnixNano())
 	max := 512
@@ -117,7 +120,7 @@ func BenchmarkFloat(b *testing.B) {
 	for i := 0; i < max; i++ {
 		w := new(bytes.Buffer)
 		v := rand.ExpFloat64() - rand.ExpFloat64()
-		w.Write([]byte{t.EttNewFloat})
+		w.Write([]byte{ettNewFloat})
 		binary.Write(w, binary.BigEndian, math.Float64bits(v))
 		floats[i] = w
 	}
@@ -126,7 +129,7 @@ func BenchmarkFloat(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := floats[i%max]
-		_, err := Term(in)
+		_, err := c.Read(in)
 
 		if err != io.EOF && err != nil {
 			b.Fatal(err)
@@ -134,8 +137,9 @@ func BenchmarkFloat(b *testing.B) {
 	}
 }
 
-func BenchmarkPid(b *testing.B) {
+func BenchmarkReadPid(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand.Seed(time.Now().UnixNano())
 	max := 64
@@ -147,7 +151,7 @@ func BenchmarkPid(b *testing.B) {
 		s := bytes.Repeat([]byte{'a'}, length)
 		b := bytes.Map(randRune, s)
 		b[6] = '@'
-		w.Write([]byte{t.EttPid, t.EttSmallAtom, byte(length)})
+		w.Write([]byte{ettPid, ettSmallAtom, byte(length)})
 		w.Write(b)
 		w.Write([]byte{0, 0, 0, uint8(rand.Int())})
 		w.Write([]byte{0, 0, 0, uint8(rand.Int())})
@@ -159,7 +163,7 @@ func BenchmarkPid(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := pids[i%max]
-		_, err := Term(in)
+		_, err := c.Read(in)
 
 		if err != io.EOF && err != nil {
 			b.Fatal(err)
@@ -167,8 +171,9 @@ func BenchmarkPid(b *testing.B) {
 	}
 }
 
-func BenchmarkString(b *testing.B) {
+func BenchmarkReadString(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand.Seed(time.Now().UnixNano())
 	max := 64
@@ -179,7 +184,7 @@ func BenchmarkString(b *testing.B) {
 		w := new(bytes.Buffer)
 		s := bytes.Repeat([]byte{'a'}, length)
 		b := bytes.Map(randRune, s)
-		w.Write([]byte{t.EttString})
+		w.Write([]byte{ettString})
 		binary.Write(w, binary.BigEndian, uint16(len(b)))
 		w.Write(b)
 		strings[i] = w
@@ -189,7 +194,7 @@ func BenchmarkString(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := strings[i%max]
-		_, err := Term(in)
+		_, err := c.Read(in)
 
 		if err != io.EOF && err != nil {
 			b.Fatal(err)
@@ -199,14 +204,4 @@ func BenchmarkString(b *testing.B) {
 
 func randRune(_ rune) rune {
 	return rune('0' + byte(rand.Intn('z'-'0'+1)))
-}
-
-func reverse(b []byte) []byte {
-	size := len(b)
-	hsize := size >> 1
-	for i := 0; i < hsize; i++ {
-		b[i], b[size-i-1] = b[size-i-1], b[i]
-	}
-
-	return b
 }

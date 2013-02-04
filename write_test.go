@@ -1,25 +1,24 @@
-package write
+package etf
 
 import (
 	"bytes"
 	"reflect"
-	"github.com/goerlang/etf/read"
-	ty "github.com/goerlang/etf/types"
 	"math"
 	"math/big"
 	"testing"
 )
 
-func TestAtom(t *testing.T) {
-	test := func(in ty.Atom, shouldFail bool) {
+func TestWriteAtom(t *testing.T) {
+	c := new(Context)
+	test := func(in Atom, shouldFail bool) {
 		w := new(bytes.Buffer)
-		if err := Atom(w, in); err != nil {
+		if err := c.writeAtom(w, in); err != nil {
 			if !shouldFail {
 				t.Error(in, err)
 			}
 		} else if shouldFail {
 			t.Error("err == nil (%v)", in)
-		} else if v, err := read.Term(w); err != nil {
+		} else if v, err := c.Read(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
@@ -28,19 +27,20 @@ func TestAtom(t *testing.T) {
 		}
 	}
 
-	test(ty.Atom(""), false)
-	test(ty.Atom(bytes.Repeat([]byte{'a'}, math.MaxUint8)), false)
-	test(ty.Atom(bytes.Repeat([]byte{'a'}, math.MaxUint8+1)), false)
-	test(ty.Atom(bytes.Repeat([]byte{'a'}, math.MaxUint16)), false)
-	test(ty.Atom(bytes.Repeat([]byte{'a'}, math.MaxUint16+1)), true)
+	test(Atom(""), false)
+	test(Atom(bytes.Repeat([]byte{'a'}, math.MaxUint8)), false)
+	test(Atom(bytes.Repeat([]byte{'a'}, math.MaxUint8+1)), false)
+	test(Atom(bytes.Repeat([]byte{'a'}, math.MaxUint16)), false)
+	test(Atom(bytes.Repeat([]byte{'a'}, math.MaxUint16+1)), true)
 }
 
-func TestBinary(t *testing.T) {
+func TestWriteBinary(t *testing.T) {
+	c := new(Context)
 	test := func(in []byte) {
 		w := new(bytes.Buffer)
-		if err := Binary(w, in); err != nil {
+		if err := c.writeBinary(w, in); err != nil {
 			t.Error(in, err)
-		} else if v, err := read.Term(w); err != nil {
+		} else if v, err := c.Read(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
@@ -54,12 +54,13 @@ func TestBinary(t *testing.T) {
 	test(bytes.Repeat([]byte{123}, 65536))
 }
 
-func TestBool(t *testing.T) {
+func TestWriteBool(t *testing.T) {
+	c := new(Context)
 	test := func(in bool) {
 		w := new(bytes.Buffer)
-		if err := Bool(w, in); err != nil {
+		if err := c.writeBool(w, in); err != nil {
 			t.Error(in, err)
-		} else if v, err := read.Term(w); err != nil {
+		} else if v, err := c.Read(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
@@ -72,12 +73,13 @@ func TestBool(t *testing.T) {
 	test(false)
 }
 
-func TestFloat(t *testing.T) {
+func TestWriteFloat(t *testing.T) {
+	c := new(Context)
 	test := func(in float64) {
 		w := new(bytes.Buffer)
-		if err := Float(w, in); err != nil {
+		if err := c.writeFloat(w, in); err != nil {
 			t.Error(in, err)
-		} else if v, err := read.Term(w); err != nil {
+		} else if v, err := c.Read(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
@@ -92,12 +94,13 @@ func TestFloat(t *testing.T) {
 	test(math.MaxFloat64)
 }
 
-func TestInt(t *testing.T) {
+func TestWriteInt(t *testing.T) {
+	c := new(Context)
 	test := func(in int64) {
 		w := new(bytes.Buffer)
-		if err := Int(w, in); err != nil {
+		if err := c.writeInt(w, in); err != nil {
 			t.Error(in, err)
-		} else if v, err := read.Term(w); err != nil {
+		} else if v, err := c.Read(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
@@ -118,12 +121,13 @@ func TestInt(t *testing.T) {
 	test(math.MaxInt64)
 }
 
-func TestUint(t *testing.T) {
+func TestWriteUint(t *testing.T) {
+	c := new(Context)
 	test := func(in uint64) {
 		w := new(bytes.Buffer)
-		if err := Uint(w, in); err != nil {
+		if err := c.writeUint(w, in); err != nil {
 			t.Error(in, err)
-		} else if v, err := read.Term(w); err != nil {
+		} else if v, err := c.Read(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
@@ -151,12 +155,13 @@ func TestUint(t *testing.T) {
 	test(math.MaxUint64)
 }
 
-func TestPid(t *testing.T) {
-	test := func(in ty.Pid) {
+func TestWritePid(t *testing.T) {
+	c := new(Context)
+	test := func(in Pid) {
 		w := new(bytes.Buffer)
-		if err := Pid(w, in); err != nil {
+		if err := c.writePid(w, in); err != nil {
 			t.Error(in, err)
-		} else if v, err := read.Term(w); err != nil {
+		} else if v, err := c.Read(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
@@ -165,20 +170,21 @@ func TestPid(t *testing.T) {
 		}
 	}
 
-	test(ty.Pid{ty.Atom("omg@lol"), 38, 0, 3})
-	test(ty.Pid{ty.Atom("self@localhost"), 32, 1, 9})
+	test(Pid{Atom("omg@lol"), 38, 0, 3})
+	test(Pid{Atom("self@localhost"), 32, 1, 9})
 }
 
-func TestString(t *testing.T) {
+func TestWriteString(t *testing.T) {
+	c := new(Context)
 	test := func(in string, shouldFail bool) {
 		w := new(bytes.Buffer)
-		if err := String(w, in); err != nil {
+		if err := c.writeString(w, in); err != nil {
 			if !shouldFail {
 				t.Error(in, err)
 			}
 		} else if shouldFail {
 			t.Error("err == nil (%v)", in)
-		} else if v, err := read.Term(w); err != nil {
+		} else if v, err := c.Read(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
@@ -192,20 +198,21 @@ func TestString(t *testing.T) {
 	test(string(bytes.Repeat([]byte{'a'}, math.MaxUint16+1)), true)
 }
 
-func TestTerm(t *testing.T) {
+func TestWriteTerm(t *testing.T) {
+	c := new(Context)
 	type s1 struct {
 		L []interface{}
 		F float64
 	}
 	type s2 struct {
-		ty.Atom
+		Atom
 		S  string
 		I  int
 		S1 s1
 		B  byte
 	}
 	in := s2{
-		ty.Atom("lol"),
+		Atom("lol"),
 		"omg",
 		13666,
 		s1{
@@ -220,16 +227,16 @@ func TestTerm(t *testing.T) {
 	}
 
 	w := new(bytes.Buffer)
-	if err := Term(w, in); err != nil {
+	if err := c.Write(w, in); err != nil {
 		t.Error(in, err)
 	} else {
-		if term, err := read.Term(w); err != nil {
+		if term, err := c.Read(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", in, l)
-		} else if err := Term(w, term); err != nil {
+		} else if err := c.Write(w, term); err != nil {
 			t.Error(term, err)
-		} else if term, err := read.Term(w); err != nil {
+		} else if term, err := c.Read(w); err != nil {
 			t.Error(in, err)
 		} else if l := w.Len(); l != 0 {
 			t.Errorf("%v: buffer len %d", term, l)

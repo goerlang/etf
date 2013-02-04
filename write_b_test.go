@@ -1,8 +1,7 @@
-package write
+package etf
 
 import (
 	"bytes"
-	t "github.com/goerlang/etf/types"
 	. "io/ioutil"
 	"math"
 	"math/big"
@@ -11,30 +10,32 @@ import (
 	"time"
 )
 
-func BenchmarkAtom(b *testing.B) {
+func BenchmarkWriteAtom(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand.Seed(time.Now().UnixNano())
 	max := 64
 	length := 64
-	atoms := make([]t.Atom, max)
+	atoms := make([]Atom, max)
 
 	for i := 0; i < max; i++ {
-		atoms[i] = t.Atom(bytes.Repeat([]byte{byte('A' + i)}, length))
+		atoms[i] = Atom(bytes.Repeat([]byte{byte('A' + i)}, length))
 	}
 
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
 		in := atoms[i%max]
-		if err := Atom(Discard, in); err != nil {
+		if err := c.writeAtom(Discard, in); err != nil {
 			b.Fatal(in, err)
 		}
 	}
 }
 
-func BenchmarkBigInt(b *testing.B) {
+func BenchmarkWriteBigInt(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	uint64Max := new(big.Int).SetUint64(math.MaxUint64)
@@ -52,14 +53,15 @@ func BenchmarkBigInt(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := bigints[i%max]
-		if err := BigInt(Discard, in); err != nil {
+		if err := c.writeBigInt(Discard, in); err != nil {
 			b.Fatal(in, err)
 		}
 	}
 }
 
-func BenchmarkBinary(b *testing.B) {
+func BenchmarkWriteBinary(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand.Seed(time.Now().UnixNano())
 	max := 64
@@ -78,14 +80,15 @@ func BenchmarkBinary(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := binaries[i%max]
-		if err := Binary(Discard, in); err != nil {
+		if err := c.writeBinary(Discard, in); err != nil {
 			b.Fatal(in, err)
 		}
 	}
 }
 
-func BenchmarkBool(b *testing.B) {
+func BenchmarkWriteBool(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand.Seed(time.Now().UnixNano())
 	max := 64
@@ -99,14 +102,15 @@ func BenchmarkBool(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := bools[i%max]
-		if err := Bool(Discard, in); err != nil {
+		if err := c.writeBool(Discard, in); err != nil {
 			b.Fatal(in, err)
 		}
 	}
 }
 
-func BenchmarkFloat(b *testing.B) {
+func BenchmarkWriteFloat(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand.Seed(time.Now().UnixNano())
 	max := 512
@@ -120,14 +124,15 @@ func BenchmarkFloat(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := floats[i%max]
-		if err := Float(Discard, in); err != nil {
+		if err := c.writeFloat(Discard, in); err != nil {
 			b.Fatal(in, err)
 		}
 	}
 }
 
-func BenchmarkInt(b *testing.B) {
+func BenchmarkWriteInt(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	max := 512
@@ -141,14 +146,15 @@ func BenchmarkInt(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := ints[i%max]
-		if err := Int(Discard, in); err != nil {
+		if err := c.writeInt(Discard, in); err != nil {
 			b.Fatal(in, err)
 		}
 	}
 }
 
-func BenchmarkUint(b *testing.B) {
+func BenchmarkWriteUint(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	max := 512
@@ -162,26 +168,27 @@ func BenchmarkUint(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := ints[i%max]
-		if err := Uint(Discard, in); err != nil {
+		if err := c.writeUint(Discard, in); err != nil {
 			b.Fatal(in, err)
 		}
 	}
 }
 
-func BenchmarkPid(b *testing.B) {
+func BenchmarkWritePid(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand.Seed(time.Now().UnixNano())
 	max := 64
 	length := 16
-	pids := make([]t.Pid, max)
+	pids := make([]Pid, max)
 
 	for i := 0; i < max; i++ {
 		s := bytes.Repeat([]byte{'a'}, length)
 		b := bytes.Map(randRune, s)
 		b[6] = '@'
-		pids[i] = t.Pid{
-			t.Atom(b),
+		pids[i] = Pid{
+			Atom(b),
 			uint32(rand.Intn(65536)),
 			uint32(rand.Intn(256)),
 			byte(rand.Intn(16)),
@@ -192,14 +199,15 @@ func BenchmarkPid(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := pids[i%max]
-		if err := Pid(Discard, in); err != nil {
+		if err := c.writePid(Discard, in); err != nil {
 			b.Fatal(in, err)
 		}
 	}
 }
 
-func BenchmarkString(b *testing.B) {
+func BenchmarkWriteString(b *testing.B) {
 	b.StopTimer()
+	c := new(Context)
 
 	rand.Seed(time.Now().UnixNano())
 	max := 64
@@ -215,12 +223,8 @@ func BenchmarkString(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		in := strings[i%max]
-		if err := String(Discard, in); err != nil {
+		if err := c.writeString(Discard, in); err != nil {
 			b.Fatal(in, err)
 		}
 	}
-}
-
-func randRune(_ rune) rune {
-	return rune('0' + byte(rand.Intn('z'-'0'+1)))
 }
