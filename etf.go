@@ -63,7 +63,7 @@ const (
 	ettLargeBig      = 'o'
 	ettLargeTuple    = 'i'
 	ettList          = 'l'
-	ettNewCache      = 'N' // what?
+	ettNewCache      = 'N'
 	ettNewFloat      = 'F'
 	ettNewFun        = 'p'
 	ettNewRef        = 'r'
@@ -97,7 +97,7 @@ var tagNames = map[byte]string{
 	ettLargeBig:      "LARGE_BIG_EXT",
 	ettLargeTuple:    "LARGE_TUPLE_EXT",
 	ettList:          "LIST_EXT",
-	ettNewCache:      "NewCache",
+	ettNewCache:      "NEW_CACHE_EXT",
 	ettNewFloat:      "NEW_FLOAT_EXT",
 	ettNewFun:        "NEW_FUN_EXT",
 	ettNewRef:        "NEW_REFERENCE_EXT",
