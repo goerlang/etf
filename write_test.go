@@ -2,9 +2,9 @@ package etf
 
 import (
 	"bytes"
-	"reflect"
 	"math"
 	"math/big"
+	"reflect"
 	"testing"
 )
 
