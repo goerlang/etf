@@ -91,7 +91,7 @@ func (c *Context) writeBigInt(w io.Writer, x *big.Int) (err error) {
 
 	bytes := reverse(new(big.Int).Abs(x).Bytes())
 
-	switch size := len(bytes); {
+	switch size := int64(len(bytes)); {
 	case size <= math.MaxUint8:
 		// $nAS…
 		_, err = w.Write([]byte{ettSmallBig, byte(size), byte(sign)})
@@ -116,7 +116,7 @@ func (c *Context) writeBigInt(w io.Writer, x *big.Int) (err error) {
 }
 
 func (c *Context) writeBinary(w io.Writer, bytes []byte) (err error) {
-	switch size := len(bytes); {
+	switch size := int64(len(bytes)); {
 	case size <= math.MaxUint32:
 		// $mLLLL…
 		data := []byte{
