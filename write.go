@@ -13,6 +13,12 @@ type ErrUnknownType struct {
 	t reflect.Type
 }
 
+func (c *Context) WriteDist(w io.Writer, _ []Term) (err error) {
+	// TODO: now it is just stub dist header, add cache functionality
+	_, err = w.Write([]byte{EtDist, 0})
+	return
+}
+
 func (c *Context) Write(w io.Writer, term interface{}) (err error) {
 	switch v := term.(type) {
 	case bool:

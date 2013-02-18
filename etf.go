@@ -4,7 +4,19 @@ import (
 	"fmt"
 )
 
+type cacheFlag struct {
+	isNew      bool
+	segmentIdx uint8
+}
+
+type atomCacheRef struct {
+	idx  uint8
+	text *string
+}
+
 type Context struct {
+	atomCache    [2048]*string
+	currentCache []*string
 }
 
 type Term interface{}
@@ -56,6 +68,7 @@ const (
 	ettBinary        = 'm'
 	ettBitBinary     = 'M'
 	ettCachedAtom    = 'C'
+	ettCacheRef      = 'R'
 	ettExport        = 'q'
 	ettFloat         = 'c'
 	ettFun           = 'u'
@@ -82,6 +95,11 @@ const (
 const (
 	// Erlang external term format version
 	EtVersion = byte(131)
+)
+
+const (
+	// Erlang distribution header
+	EtDist = byte('D')
 )
 
 var tagNames = map[byte]string{

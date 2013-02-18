@@ -20,6 +20,100 @@ var (
 	bFalse       = []byte("false")
 )
 
+func (c *Context) ReadDist(r io.Reader) (err error) {
+	b := make([]byte, 1)
+	_, err = io.ReadFull(r, b)
+	if err != nil {
+		return
+	}
+
+	if b[0] != EtDist {
+		err = fmt.Errorf("Not dist header: %d", b[0])
+		return
+	}
+
+	_, err = io.ReadFull(r, b)
+	if err != nil {
+		return
+	}
+
+	refsNum := int(b[0])
+	if refsNum > 0 {
+		b = make([]byte, (refsNum/2)+1)
+		_, err = io.ReadFull(r, b)
+		if err != nil {
+			return
+		}
+
+		flags := make([]cacheFlag, refsNum)
+		longAtoms := false
+
+		for i := 0; i < (refsNum + 1); i++ {
+			var v byte
+			if (i & 0x01) == 0 {
+				v = b[i/2] & 0x0F
+			} else {
+				v = (b[i/2] >> 4) & 0x0F
+			}
+			if i < refsNum {
+				flags[i] = cacheFlag{(v & 0x08) == 0x08, v & 0x07}
+			} else {
+				longAtoms = (v & 0x01) == 0x01
+			}
+		}
+
+		var headLen int
+		if longAtoms {
+			headLen = 1 + 2
+		} else {
+			headLen = 1 + 1
+		}
+		currentAtomCache := make([]*string, len(flags))
+		i := 0
+
+		for _, _ = range flags {
+			if flags[i].isNew {
+				b = make([]byte, headLen)
+				_, err = io.ReadFull(r, b)
+				if err != nil {
+					return
+				}
+				intRef := uint8(b[0])
+
+				var atomLen uint
+				if longAtoms {
+					atomLen = uint(binary.BigEndian.Uint16(b[1:3]))
+				} else {
+					atomLen = uint(b[1])
+				}
+				b = make([]byte, atomLen)
+				_, err = io.ReadFull(r, b)
+				if err != nil {
+					return
+				}
+				strText := string(b)
+				currentAtomCache[i] = &strText
+
+				cIdx := ((uint16(flags[i].segmentIdx) << 8) | uint16(intRef))
+				c.atomCache[cIdx] = &strText
+			} else {
+				b = make([]byte, 1)
+				_, err = io.ReadFull(r, b)
+				if err != nil {
+					return
+				}
+				intRef := uint8(b[0])
+				cIdx := ((uint16(flags[i].segmentIdx) << 8) | uint16(intRef))
+				currentAtomCache[i] = c.atomCache[cIdx]
+			}
+			i++
+		}
+
+		c.currentCache = currentAtomCache
+	}
+	return
+}
+
 func (c *Context) Read(r io.Reader) (term Term, err error) {
 	var etype byte
 	if etype, err = ruint8(r); err != nil {
@@ -299,10 +393,13 @@ func (c *Context) Read(r io.Reader) (term Term, err error) {
 		p.Creation, err = ruint8(r)
 		term = p
 
-		/*
-			case ettCachedAtom:
-			case ettNewCache:
-		*/
+	case ettCacheRef:
+		b = make([]byte, 1)
+		if _, err = io.ReadFull(r, b); err != nil {
+			break
+		}
+		term = Atom(*c.currentCache[b[0]])
+
 	default:
 		err = &ErrUnknownTerm{etype}
 	}
