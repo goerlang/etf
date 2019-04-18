@@ -287,6 +287,23 @@ func (c *Context) Read(r io.Reader) (term Term, err error) {
 		}
 		term = tuple
 
+	case ettMap:
+		// $iKVKVKV…
+		var arity uint32
+		if arity, err = ruint32(r); err != nil {
+			break
+		}
+		mapVal := make(Map, arity)
+		for i := 0; i < cap(mapVal); i++ {
+			if mapVal[i].Key, err = c.Read(r); err != nil {
+				break
+			}
+			if mapVal[i].Value, err = c.Read(r); err != nil {
+				break
+			}
+		}
+		term = mapVal
+
 	case ettList:
 		// $lLLLL…$j
 		var n uint32
