@@ -43,6 +43,8 @@ func (c *Context) Write(w io.Writer, term interface{}) (err error) {
 		err = c.writePid(w, v)
 	case Tuple:
 		err = c.writeTuple(w, v)
+	case Map:
+		err = c.writeMap(w, v)
 	case Ref:
 		err = c.writeRef(w, v)
 	default:
@@ -346,6 +348,32 @@ func (c *Context) writeTuple(w io.Writer, tuple Tuple) (err error) {
 
 	for _, v := range tuple {
 		if err = c.Write(w, v); err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+func (c *Context) writeMap(w io.Writer, theMap Map) (err error) {
+	n := len(theMap)
+	_, err = w.Write([]byte{
+		ettMap,
+		byte(n >> 24),
+		byte(n >> 16),
+		byte(n >> 8),
+		byte(n),
+	})
+
+	if err != nil {
+		return
+	}
+
+	for _, v := range theMap {
+		if err = c.Write(w, v.Key); err != nil {
+			return
+		}
+		if err = c.Write(w, v.Value); err != nil {
 			return
 		}
 	}

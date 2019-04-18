@@ -43,6 +43,13 @@ type Ref struct {
 	Id       []uint32
 }
 
+type MapEntry struct {
+	Key   Term
+	Value Term
+}
+
+type Map []MapEntry
+
 type Function struct {
 	Arity     byte
 	Unique    [16]byte
@@ -90,6 +97,7 @@ const (
 	ettSmallInteger  = 'a'
 	ettSmallTuple    = 'h'
 	ettString        = 'k'
+	ettMap           = 't'
 )
 
 const (
@@ -129,6 +137,7 @@ var tagNames = map[byte]string{
 	ettSmallInteger:  "SMALL_INTEGER_EXT",
 	ettSmallTuple:    "SMALL_TUPLE_EXT",
 	ettString:        "STRING_EXT",
+	ettMap:           "MAP",
 }
 
 func (t Tuple) Element(i int) Term {
